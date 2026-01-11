@@ -62,6 +62,11 @@ public class PotionButton extends ItemButton {
     }
 
     @Override
+    public @NotNull PotionButton hideTooltip() {
+        return (PotionButton) super.hideTooltip();
+    }
+
+    @Override
     public @NotNull PotionButton copy() {
         return copy(this, PotionButton::new);
     }

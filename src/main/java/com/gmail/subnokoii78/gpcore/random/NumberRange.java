@@ -71,6 +71,10 @@ public class NumberRange<T extends Number> {
         else return value;
     }
 
+    public boolean isFinite() {
+        return !(Double.isFinite(min.doubleValue()) || Double.isFinite(max.doubleValue()));
+    }
+
     public int clamp(int value) {
         if (value < min.intValue()) {
             return min.intValue();

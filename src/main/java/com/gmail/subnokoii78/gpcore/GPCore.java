@@ -69,6 +69,17 @@ public final class GPCore {
 
     public static void initialize(Plugin plugin, PluginBootstrap pluginBootstrap, String configPath, String defaultConfigPath) throws IllegalStateException {
         if (GPCore.plugin == null) {
+            if (plugin.getDataFolder().exists()) {
+                plugin.getComponentLogger().info(Component.text("データフォルダが既に存在するため、作成をスキップしました"));
+            }
+            else {
+                final boolean created = plugin.getDataFolder().mkdir();
+
+                if (!created) {
+                    throw new IllegalStateException("データフォルダの作成に失敗しました; 致命的な例外のためプラグインは停止されます");
+                }
+            }
+
             GPCore.plugin = plugin;
             GPCore.bootstrap = pluginBootstrap;
             GPCore.pluginConfigLoader = new PluginConfigLoader(

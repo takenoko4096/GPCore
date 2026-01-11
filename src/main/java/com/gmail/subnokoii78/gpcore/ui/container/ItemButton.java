@@ -83,6 +83,11 @@ public class ItemButton {
         return this;
     }
 
+    public @NotNull ItemButton hideTooltip() {
+        itemStackBuilder.hideTooltip(true);
+        return this;
+    }
+
     public @NotNull ItemButton clickSound(@NotNull Sound sound, float volume, float pitch) {
         this.sound = new ItemButtonClickSound(sound, volume, pitch);
         return this;

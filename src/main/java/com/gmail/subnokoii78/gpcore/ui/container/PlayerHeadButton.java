@@ -45,6 +45,11 @@ public class PlayerHeadButton extends ItemButton {
     }
 
     @Override
+    public @NotNull PlayerHeadButton hideTooltip() {
+        return (PlayerHeadButton) super.hideTooltip();
+    }
+
+    @Override
     public @NotNull PlayerHeadButton clickSound(@NotNull ItemButtonClickSound sound) {
         return (PlayerHeadButton) super.clickSound(sound);
     }

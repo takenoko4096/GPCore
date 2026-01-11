@@ -11,14 +11,15 @@ import net.minecraft.world.item.component.CustomData;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.Objects;
 
+@NullMarked
 public final class ItemStackCustomDataAccess {
     private final ItemStack itemStack;
 
-    private ItemStackCustomDataAccess(@NotNull ItemStack itemStack) {
+    private ItemStackCustomDataAccess(ItemStack itemStack) {
         this.itemStack = itemStack;
     }
 
@@ -35,23 +36,23 @@ public final class ItemStackCustomDataAccess {
         return Objects.equals(itemStack, that.itemStack);
     }
 
-    private @NotNull CompoundTag getCustomData() {
+    private CompoundTag getCustomData() {
         final CustomData customData = CraftItemStack.asNMSCopy(itemStack).get(DataComponents.CUSTOM_DATA);
         return (customData == null) ? new CompoundTag() : customData.copyTag();
     }
 
-    private void setCustomData(@NotNull CompoundTag compound) {
+    private void setCustomData(CompoundTag compound) {
         final net.minecraft.world.item.ItemStack nms = CraftItemStack.asNMSCopy(itemStack);
         nms.set(DataComponents.CUSTOM_DATA, CustomData.of(compound));
         final ItemMeta meta = CraftItemStack.asBukkitCopy(nms).getItemMeta();
         itemStack.setItemMeta(meta);
     }
 
-    public @NotNull MojangsonCompound read() {
+    public MojangsonCompound read() {
         return MojangsonParser.compound(getCustomData().toString());
     }
 
-    public boolean write(@NotNull MojangsonCompound compound) {
+    public boolean write(MojangsonCompound compound) {
         try {
             setCustomData(TagParser.parseCompoundFully(MojangsonSerializer.serialize(compound)));
             return true;
@@ -61,7 +62,7 @@ public final class ItemStackCustomDataAccess {
         }
     }
 
-    public static @NotNull ItemStackCustomDataAccess of(@NotNull ItemStack itemStack) {
+    public static ItemStackCustomDataAccess of(ItemStack itemStack) {
         return new ItemStackCustomDataAccess(itemStack);
     }
 }

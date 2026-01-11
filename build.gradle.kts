@@ -8,7 +8,7 @@ plugins {
     id("com.gradleup.shadow").version("9.1.0")
 }
 
-group = "com.gmail.takenokoii78"
+group = "com.gmail.subnokoii78"
 version = "1.0-SNAPSHOT"
 description = ""
 
@@ -56,9 +56,5 @@ tasks {
 
         // 各種警告を無視(これがないと永遠にビルドできない)
         options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-unchecked"))
-    }
-
-    withType<JavaCompile>().configureEach {
-        options.encoding = "UTF-8"
     }
 }

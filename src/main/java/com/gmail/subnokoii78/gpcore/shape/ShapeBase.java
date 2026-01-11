@@ -4,20 +4,26 @@ import com.gmail.subnokoii78.gpcore.vector.TripleAxisRotationBuilder;
 import com.gmail.subnokoii78.gpcore.vector.Vector3Builder;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
+@NullMarked
 public abstract class ShapeBase {
-    protected World world = Bukkit.getWorlds().getFirst();
+    protected World world;
 
     protected final Vector3Builder center = new Vector3Builder();
 
     protected final TripleAxisRotationBuilder rotation = new TripleAxisRotationBuilder();
 
+    protected ShapeBase() {
+        world = Bukkit.getWorlds().getFirst();
+    }
+
+    @Nullable
     private ParticleSpawner<?> particle;
 
     private float scale = 1.0f;
@@ -26,24 +32,24 @@ public abstract class ShapeBase {
 
     private final Set<Consumer<Vector3Builder>> consumers = new HashSet<>();
 
-    public final void put(@NotNull World world, @NotNull Vector3Builder center) {
+    public final void put(World world, Vector3Builder center) {
         this.world = world;
         this.center.x(center.x());
         this.center.y(center.y());
         this.center.z(center.z());
     }
 
-    public final void put(@NotNull World world) {
+    public final void put(World world) {
         this.world = world;
     }
 
-    public final void put(@NotNull Vector3Builder center) {
+    public final void put(Vector3Builder center) {
         this.center.x(center.x());
         this.center.y(center.y());
         this.center.z(center.z());
     }
 
-    public final void rotate(@NotNull TripleAxisRotationBuilder rotation) {
+    public final void rotate(TripleAxisRotationBuilder rotation) {
         this.rotation.add(rotation);
     }
 
@@ -71,13 +77,13 @@ public abstract class ShapeBase {
         this.density = density;
     }
 
-    protected final void dot(@NotNull Vector3Builder relativePos) {
+    protected final void dot(Vector3Builder relativePos) {
         final Vector3Builder position = center.copy().add(relativePos.copy().scale((double) scale));
         if (particle != null) particle.place(world, position).spawn();
         consumers.forEach(consumer -> consumer.accept(position));
     }
 
-    public void onDot(@NotNull Consumer<Vector3Builder> consumer) {
+    public void onDot(Consumer<Vector3Builder> consumer) {
         consumers.add(consumer);
     }
 

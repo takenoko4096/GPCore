@@ -49,6 +49,11 @@ public class LeatherArmorButton extends ArmorButton {
     }
 
     @Override
+    public @NotNull LeatherArmorButton hideTooltip() {
+        return (LeatherArmorButton) super.hideTooltip();
+    }
+
+    @Override
     public @NotNull LeatherArmorButton onClick(Consumer<ItemButtonClickEvent> listener) {
         return (LeatherArmorButton) super.onClick(listener);
     }

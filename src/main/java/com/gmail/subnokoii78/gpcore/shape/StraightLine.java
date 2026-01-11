@@ -1,8 +1,10 @@
 package com.gmail.subnokoii78.gpcore.shape;
 
 import org.bukkit.util.RayTraceResult;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public class StraightLine extends ShapeBase {
     @Override
     public void draw() {

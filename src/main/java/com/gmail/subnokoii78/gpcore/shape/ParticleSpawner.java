@@ -1,18 +1,17 @@
 package com.gmail.subnokoii78.gpcore.shape;
 
 import com.gmail.subnokoii78.gpcore.vector.Vector3Builder;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@NullMarked
 public class ParticleSpawner<T> {
-    private World world = Bukkit.getWorlds().getFirst();
+    private World world;
 
     private final Vector3Builder center = new Vector3Builder();
 
@@ -26,19 +25,20 @@ public class ParticleSpawner<T> {
 
     private final List<Player> receivers = new ArrayList<>();
 
+    @Nullable
     private final T data;
 
-    public ParticleSpawner(@NotNull Particle particle, @NotNull T data) {
+    public ParticleSpawner(Particle particle, @Nullable T data) {
         this.particle = particle;
         this.data = data;
+        this.world = Bukkit.getWorlds().getFirst();
     }
 
-    public ParticleSpawner(@NotNull Particle particle) {
-        this.particle = particle;
-        this.data = null;
+    public ParticleSpawner(Particle particle) {
+        this(particle, null);
     }
 
-    public ParticleSpawner<T> place(@NotNull World world, @NotNull Vector3Builder center) {
+    public ParticleSpawner<T> place(World world, Vector3Builder center) {
         this.world = world;
         this.center.x(center.x());
         this.center.y(center.y());
@@ -46,11 +46,11 @@ public class ParticleSpawner<T> {
         return this;
     }
 
-    public ParticleSpawner<T> place(@NotNull Location location) {
+    public ParticleSpawner<T> place(Location location) {
         return place(location.getWorld(), Vector3Builder.from(location));
     }
 
-    public ParticleSpawner<T> delta(@NotNull Vector3Builder delta) {
+    public ParticleSpawner<T> delta(Vector3Builder delta) {
         this.delta.x(delta.x());
         this.delta.y(delta.y());
         this.delta.z(delta.z());
@@ -81,5 +81,17 @@ public class ParticleSpawner<T> {
                 receiver.spawnParticle(particle, center.withWorld(world), count, delta.x(), delta.y(), delta.z(), speed, data);
             }
         }
+    }
+
+    public static DustSpawner dust(Color color, float size) {
+        return new DustSpawner(new Particle.DustOptions(color, size));
+    }
+
+    public static DustTransitionSpawner dustTransition(Color from, Color to, float size) {
+        return new DustTransitionSpawner(new Particle.DustTransition(from, to, size));
+    }
+
+    public static ParticleSpawner<?> of(Particle particle) {
+        return new ParticleSpawner<>(particle);
     }
 }

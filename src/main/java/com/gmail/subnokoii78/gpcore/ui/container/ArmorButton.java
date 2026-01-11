@@ -52,6 +52,11 @@ public class ArmorButton extends ItemButton {
     }
 
     @Override
+    public @NotNull ArmorButton hideTooltip() {
+        return (ArmorButton) super.hideTooltip();
+    }
+
+    @Override
     public @NotNull ArmorButton clickSound(@NotNull ItemButtonClickSound sound) {
         return (ArmorButton) super.clickSound(sound);
     }
