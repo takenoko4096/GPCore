@@ -5,10 +5,11 @@ import com.gmail.subnokoii78.gpcore.vector.TripleAxisRotationBuilder;
 import com.gmail.subnokoii78.gpcore.vector.Vector3Builder;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.lang.reflect.InvocationTargetException;
 
+@NullMarked
 public final class ShapeTemplate {
     private final ShapeBase base = new ShapeBase() {
         @Override
@@ -17,33 +18,29 @@ public final class ShapeTemplate {
 
     public ShapeTemplate() {}
 
-    public ShapeTemplate put(@NotNull Location location) {
+    public ShapeTemplate put(Location location) {
         world(location.getWorld());
         center(Vector3Builder.from(location));
         rotation(TripleAxisRotationBuilder.from(DualAxisRotationBuilder.from(location)));
         return this;
     }
 
-    public ShapeTemplate world(@NotNull World world) {
-        base.world = world;
+    public ShapeTemplate world(World world) {
+        base.setDimension(world);
         return this;
     }
 
-    public ShapeTemplate center(@NotNull Vector3Builder center) {
-        base.center.x(center.x());
-        base.center.y(center.y());
-        base.center.z(center.z());
+    public ShapeTemplate center(Vector3Builder position) {
+        base.setPosition(position);
         return this;
     }
 
-    public ShapeTemplate rotation(@NotNull TripleAxisRotationBuilder rotation) {
-        base.rotation.yaw(rotation.yaw());
-        base.rotation.pitch(rotation.pitch());
-        base.rotation.roll(rotation.roll());
+    public ShapeTemplate rotation(TripleAxisRotationBuilder rotation) {
+        base.setRotation(rotation);
         return this;
     }
 
-    public ShapeTemplate particle(@NotNull ParticleSpawner<?> particle) {
+    public ShapeTemplate particle(ParticleSpawner<?> particle) {
         base.setParticle(particle);
         return this;
     }
@@ -67,11 +64,9 @@ public final class ShapeTemplate {
             throw new IllegalArgumentException("コンストラクターを呼び出せないクラスが渡されました");
         }
 
-        instance.world = base.world;
-        instance.center.x(base.center.x());
-        instance.center.y(base.center.y());
-        instance.center.z(base.center.z());
-        instance.rotation.add(base.rotation);
+        instance.setDimension(base.getDimension());
+        instance.setPosition(base.getPosition());
+        instance.setRotation(base.getRotation());
         instance.setParticle(base.getParticle());
         instance.setScale(base.getScale());
         instance.setDensity(base.getDensity());

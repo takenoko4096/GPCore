@@ -2,11 +2,13 @@ package com.gmail.subnokoii78.gpcore.shape;
 
 import com.gmail.subnokoii78.gpcore.vector.TripleAxisRotationBuilder;
 import com.gmail.subnokoii78.gpcore.vector.Vector3Builder;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class Rhombus extends ShapeBase {
     @Override
     public void draw() {
-        final TripleAxisRotationBuilder.ObjectCoordsSystem axes = rotation.getObjectsCoordsSystem();
+        final TripleAxisRotationBuilder.ObjectCoordsSystem axes = getRotation().getObjectsCoordsSystem();
 
         var left = axes.getX();
         var right = axes.getX().invert();
@@ -21,10 +23,8 @@ public class Rhombus extends ShapeBase {
 
     protected void lineFromTo(Vector3Builder from, Vector3Builder to) {
         final StraightLine line = new StraightLine();
-        line.put(world, from);
-        line.onDot(this::dot);
-        line.rotate(TripleAxisRotationBuilder.from(from.getDirectionTo(to).getRotation2f()));
-        line.setScale((float) from.getDistanceTo(to));
+        line.setDimension(getDimension());
+        line.set(from, to);
         line.draw();
     }
 }

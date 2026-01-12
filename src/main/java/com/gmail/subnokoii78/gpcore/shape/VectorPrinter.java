@@ -7,27 +7,28 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class VectorPrinter {
     private final World dimension;
 
-    private final Vector3Builder center;
+    private final Vector3Builder position;
 
-    public VectorPrinter(@NotNull World dimension, @NotNull Vector3Builder center) {
+    public VectorPrinter(World dimension, Vector3Builder position) {
         this.dimension = dimension;
-        this.center = center;
+        this.position = position;
     }
 
-    public VectorPrinter(@NotNull Location location) {
+    public VectorPrinter(Location location) {
         this.dimension = location.getWorld();
-        this.center = Vector3Builder.from(location);
+        this.position = Vector3Builder.from(location);
     }
 
-    public void print(@NotNull Vector3Builder vector3, @NotNull Color color) {
+    public void print(Vector3Builder vector3, Color color) {
         dimension.spawnParticle(
             Particle.FLAME,
-            center.withWorld(dimension),
+            position.withWorld(dimension),
             1,
             0.0d, 0.0d, 0.0d,
             0.0d
@@ -35,7 +36,7 @@ public final class VectorPrinter {
 
         dimension.spawnParticle(
             Particle.SOUL_FIRE_FLAME,
-            center.copy().add(vector3).withWorld(dimension),
+            position.copy().add(vector3).withWorld(dimension),
             1,
             0.0d, 0.0d, 0.0d,
             0.0d
@@ -44,18 +45,18 @@ public final class VectorPrinter {
         new ShapeTemplate()
             .scale((float) vector3.length())
             .world(dimension)
-            .center(center)
-            .particle(new DustSpawner(new Particle.DustOptions(color, 0.5f)))
+            .center(position)
+            .particle(ParticleSpawner.dust(color, 0.5f))
             .rotation(TripleAxisRotationBuilder.from(vector3.getRotation2f()))
             .newShape(StraightLine.class)
             .draw();
     }
 
-    public void print(@NotNull DualAxisRotationBuilder rotation2, @NotNull Color color) {
+    public void print(DualAxisRotationBuilder rotation2, Color color) {
         print(rotation2.getDirection3d(), color);
     }
 
-    public void print(@NotNull TripleAxisRotationBuilder rotation3, @NotNull Color color) {
+    public void print(TripleAxisRotationBuilder rotation3, Color color) {
         print(rotation3.getDirection3d(), color);
     }
 }

@@ -17,8 +17,8 @@ public class Star extends ShapeBase {
     public void draw() {
         final Vector3Builder[] points = new Vector3Builder[n];
         final PerfectCircle circle = new PerfectCircle();
-        circle.put(world);
-        circle.rotate(rotation);
+        circle.setDimension(getDimension());
+        circle.setRotation(getRotation());
 
         for (int i = 0; i < n; i++) {
             points[i] = circle.getPointOnAngle((360f / n) * i + 90);
@@ -42,11 +42,12 @@ public class Star extends ShapeBase {
 
             final StraightLine line = new StraightLine();
             final Vector3Builder direction = current.getDirectionTo(next);
-            line.put(world, current);
-            line.rotate(TripleAxisRotationBuilder.from(direction.getRotation2f()));
+            line.setDimension(getDimension());
+            line.setPosition(current);
+            line.setRotation(TripleAxisRotationBuilder.from(direction.getRotation2f()));
             line.setScale((float) current.getDistanceTo(next));
             line.setDensity(getDensity());
-            line.onDot(this::dot);
+            line.setParticle(getParticle());
             line.draw();
         }
     }

@@ -67,9 +67,18 @@ public class ParticleSpawner<T> {
         return this;
     }
 
-    public ParticleSpawner<?> receivers(List<Player> players) {
-        receivers.addAll(players);
+    public ParticleSpawner<T> receiver(Player player) {
+        receivers.add(player);
         return this;
+    }
+
+    public ParticleSpawner<T> copy() {
+        final ParticleSpawner<T> cpy = new ParticleSpawner<>(particle, data);
+        cpy.place(world, center);
+        cpy.count = count;
+        cpy.speed = speed;
+        cpy.delta(delta);
+        return cpy;
     }
 
     public void spawn() {

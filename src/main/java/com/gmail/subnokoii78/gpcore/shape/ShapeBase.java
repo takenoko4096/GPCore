@@ -3,21 +3,18 @@ package com.gmail.subnokoii78.gpcore.shape;
 import com.gmail.subnokoii78.gpcore.vector.TripleAxisRotationBuilder;
 import com.gmail.subnokoii78.gpcore.vector.Vector3Builder;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Consumer;
-
 @NullMarked
 public abstract class ShapeBase {
-    protected World world;
+    private World world;
 
-    protected final Vector3Builder center = new Vector3Builder();
+    private final Vector3Builder position = new Vector3Builder();
 
-    protected final TripleAxisRotationBuilder rotation = new TripleAxisRotationBuilder();
+    private final TripleAxisRotationBuilder rotation = new TripleAxisRotationBuilder();
 
     protected ShapeBase() {
         world = Bukkit.getWorlds().getFirst();
@@ -30,31 +27,49 @@ public abstract class ShapeBase {
 
     private float density = 1.0f;
 
-    private final Set<Consumer<Vector3Builder>> consumers = new HashSet<>();
+    public final void put(Location location) {
+        this.world = location.getWorld();
+        this.position.x(location.x());
+        this.position.y(location.y());
+        this.position.z(location.z());
+        this.rotation.yaw(location.getYaw());
+        this.rotation.pitch(location.getPitch());
+    }
 
-    public final void put(World world, Vector3Builder center) {
+    public final World getDimension() {
+        return world;
+    }
+
+    public final void setDimension(World world) {
         this.world = world;
-        this.center.x(center.x());
-        this.center.y(center.y());
-        this.center.z(center.z());
     }
 
-    public final void put(World world) {
-        this.world = world;
+    public final Vector3Builder getPosition() {
+        return position.copy();
     }
 
-    public final void put(Vector3Builder center) {
-        this.center.x(center.x());
-        this.center.y(center.y());
-        this.center.z(center.z());
+    public final void setPosition(Vector3Builder center) {
+        this.position.x(center.x());
+        this.position.y(center.y());
+        this.position.z(center.z());
     }
 
-    public final void rotate(TripleAxisRotationBuilder rotation) {
-        this.rotation.add(rotation);
+    public final TripleAxisRotationBuilder getRotation() {
+        return rotation.copy();
+    }
+
+    public final void setRotation(TripleAxisRotationBuilder rotation) {
+        this.rotation.yaw(rotation.yaw());
+        this.rotation.pitch(rotation.pitch());
+        this.rotation.roll(rotation.roll());
+    }
+
+    public final Location getLocation() {
+        return new Location(world, position.x(), position.y(), position.z(), rotation.yaw(), rotation.pitch());
     }
 
     public final @Nullable ParticleSpawner<?> getParticle() {
-        return particle;
+        return particle == null ? null : particle.copy();
     }
 
     public final void setParticle(@Nullable ParticleSpawner<?> particle) {
@@ -78,13 +93,14 @@ public abstract class ShapeBase {
     }
 
     protected final void dot(Vector3Builder relativePos) {
-        final Vector3Builder position = center.copy().add(relativePos.copy().scale((double) scale));
-        if (particle != null) particle.place(world, position).spawn();
-        consumers.forEach(consumer -> consumer.accept(position));
-    }
+        final Vector3Builder position = this.position.copy()
+            .add(
+                relativePos.copy().scale((double) scale)
+            );
 
-    public void onDot(Consumer<Vector3Builder> consumer) {
-        consumers.add(consumer);
+        if (particle != null) {
+            particle.place(world, position).spawn();
+        }
     }
 
     public abstract void draw();
