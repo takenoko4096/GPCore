@@ -1,5 +1,6 @@
 package com.gmail.subnokoii78.gpcore;
 
+import com.gmail.subnokoii78.gpcore.entity.FakeArrowLauncher;
 import com.gmail.subnokoii78.gpcore.events.BukkitEventObserver;
 import com.gmail.subnokoii78.gpcore.events.Events;
 import com.gmail.subnokoii78.gpcore.files.PluginConfigLoader;
@@ -67,30 +68,25 @@ public final class GPCore {
         }
     }
 
-    public static void initialize(Plugin plugin, PluginBootstrap pluginBootstrap, String configPath, String defaultConfigPath) throws IllegalStateException {
+    public static void initialize(Plugin plugin, @Nullable PluginBootstrap pluginBootstrap, String configPath, String defaultConfigPath) throws IllegalStateException {
         if (GPCore.plugin == null) {
             if (plugin.getDataFolder().exists()) {
                 plugin.getComponentLogger().info(Component.text("データフォルダが既に存在するため、作成をスキップしました"));
             }
             else {
-                final boolean created = plugin.getDataFolder().mkdir();
-
-                if (!created) {
-                    throw new IllegalStateException("データフォルダの作成に失敗しました; 致命的な例外のためプラグインは停止されます");
-                }
+                if (!plugin.getDataFolder().mkdir()) throw new IllegalStateException("データフォルダの作成に失敗しました; 致命的な例外のためプラグインは停止されます");
             }
 
             GPCore.plugin = plugin;
             GPCore.bootstrap = pluginBootstrap;
-            GPCore.pluginConfigLoader = new PluginConfigLoader(
-                configPath,
-                defaultConfigPath
-            );
+            GPCore.pluginConfigLoader = new PluginConfigLoader(configPath, defaultConfigPath);
             GPCore.scoreboard = new Scoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
 
             final PluginManager manager = Bukkit.getPluginManager();
             manager.registerEvents(BukkitEventObserver.INSTANCE, plugin);
             manager.registerEvents(ContainerInteraction.ContainerEventObserver.INSTANCE, plugin);
+            manager.registerEvents(FakeArrowLauncher.FakeArrowEventListener.INSTANCE, plugin);
+            FakeArrowLauncher.FakeArrowEventListener.INSTANCE.runTaskTimer(plugin, 0L, 1L);
 
             plugin.getComponentLogger().info(Component.text("GPCore が起動しました"));
         }

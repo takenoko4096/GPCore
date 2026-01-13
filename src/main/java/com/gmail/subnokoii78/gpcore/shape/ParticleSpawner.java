@@ -28,7 +28,7 @@ public class ParticleSpawner<T> {
     @Nullable
     private final T data;
 
-    public ParticleSpawner(Particle particle, @Nullable T data) {
+    protected ParticleSpawner(Particle particle, @Nullable T data) {
         this.particle = particle;
         this.data = data;
         this.world = Bukkit.getWorlds().getFirst();

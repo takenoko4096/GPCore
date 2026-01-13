@@ -10,10 +10,12 @@ import com.gmail.subnokoii78.gpcore.vector.DualAxisRotationBuilder;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
@@ -37,12 +39,14 @@ public class FakeArrowLauncher {
 
     private boolean isCritical = false;
 
-    private boolean isFlamed = false;
+    private boolean isFlame = false;
 
     private boolean isGravitated = true;
 
+    private double duration = Double.POSITIVE_INFINITY;
+
     @Nullable
-    private ParticleSpawner<?> trailParticle = null;
+    private ParticleSpawner<?> particle = null;
 
     public FakeArrowLauncher(Player shooter) {
         this.shooter = shooter;
@@ -57,6 +61,28 @@ public class FakeArrowLauncher {
         };
     }
 
+    private void initializeArrowProperties(AbstractArrow entity, ItemStack weapon, ItemStack arrow) {
+        entity.setShooter(shooter);
+        entity.setHasLeftShooter(false);
+        entity.setWeapon(weapon);
+
+        entity.setLifetimeTicks(1200);
+        entity.setItemStack(arrow);
+
+        entity.setDamage(damage);
+        entity.setCritical(isCritical);
+        entity.setFireTicks(isFlame ? 5000 : -1);
+        entity.setGravity(isGravitated);
+
+        if (arrow.getType().equals(Material.TIPPED_ARROW)) {
+            final Arrow arrowEntity = (Arrow) entity;
+            final PotionMeta potionMeta = (PotionMeta) arrow.getItemMeta();
+            for (PotionEffect effect : potionMeta.getAllEffects()) {
+                arrowEntity.addCustomEffect(effect, true);
+            }
+        }
+    }
+
     public FakeArrow launch(ItemStack weapon, ItemStack arrow) {
         final AbstractArrow projectile = shooter.launchProjectile(
             getEntityClassOf(arrow),
@@ -65,29 +91,15 @@ public class FakeArrowLauncher {
                 .scale(power)
                 .toBukkitVector(),
             entity -> {
-                entity.setShooter(shooter);
-                entity.setHasLeftShooter(false);
-                entity.setWeapon(weapon);
-
-                entity.setLifetimeTicks(1200);
-                entity.setItemStack(arrow);
-
-                entity.setDamage(damage);
-                entity.setCritical(isCritical);
-                entity.setFireTicks(isFlamed ? 5000 : -1);
-                entity.setGravity(isGravitated);
-
-                if (arrow.getType().equals(Material.TIPPED_ARROW)) {
-                    final Arrow arrowEntity = (Arrow) entity;
-                    final PotionMeta potionMeta = (PotionMeta) arrow.getItemMeta();
-                    for (PotionEffect effect : potionMeta.getAllEffects()) {
-                        arrowEntity.addCustomEffect(effect, true);
-                    }
-                }
+                initializeArrowProperties(entity, weapon, arrow);
             }
         );
 
-        return new FakeArrow(projectile, trailParticle);
+        return new FakeArrow(this, projectile);
+    }
+
+    public Player getShooter() {
+        return shooter;
     }
 
     public double getPower() {
@@ -117,12 +129,12 @@ public class FakeArrowLauncher {
         return this;
     }
 
-    public boolean isFlamed() {
-        return isFlamed;
+    public boolean isFlame() {
+        return isFlame;
     }
 
-    public FakeArrowLauncher setFlamed(boolean value) {
-        isFlamed = value;
+    public FakeArrowLauncher setFlame(boolean value) {
+        isFlame = value;
         return this;
     }
 
@@ -135,13 +147,21 @@ public class FakeArrowLauncher {
         return this;
     }
 
-    @Nullable
-    public ParticleSpawner<?> getTrailParticle() {
-        return trailParticle;
+    public double getDuration() {
+        return duration;
     }
 
-    public FakeArrowLauncher setTrailParticle(@Nullable ParticleSpawner<?> value) {
-        trailParticle = value;
+    public void setDuration(double duration) {
+        this.duration = duration;
+    }
+
+    @Nullable
+    public ParticleSpawner<?> getParticle() {
+        return particle == null ? null : particle.copy();
+    }
+
+    public FakeArrowLauncher setParticle(@Nullable ParticleSpawner<?> value) {
+        particle = value;
         return this;
     }
 
@@ -151,11 +171,18 @@ public class FakeArrowLauncher {
         @Override
         public void run() {
             for (final FakeArrow fakeArrow : FakeArrow.arrows) {
-                final ParticleSpawner<?> spawner = fakeArrow.trailParticle;
-                if (spawner == null) continue;
-                spawner.place(fakeArrow.getEntity().getLocation());
-                spawner.spawn();
-                fakeArrow.movementTicks++;
+                final ParticleSpawner<?> spawner = fakeArrow.particle;
+
+                if (spawner != null) {
+                    spawner.place(fakeArrow.getEntity().getLocation());
+                    spawner.spawn();
+                }
+
+                if (fakeArrow.lifetime >= fakeArrow.duration) {
+                    fakeArrow.arrow.remove();
+                }
+
+                fakeArrow.lifetime++;
             }
         }
 
@@ -170,10 +197,12 @@ public class FakeArrowLauncher {
 
             final Block hitBlock = event.getHitBlock();
             if (hitBlock != null) {
+                final BlockFace hitBlockFace = Objects.requireNonNull(event.getHitBlockFace());
                 fakeArrow.events.getDispatcher(FakeArrow.BLOCK_HIT).dispatch(new FakeArrow.BlockHitEvent(
                     fakeArrow,
                     shooter,
-                    hitBlock
+                    hitBlock,
+                    hitBlockFace
                 ));
             }
 
@@ -203,6 +232,13 @@ public class FakeArrowLauncher {
             }
         }
 
+        @EventHandler
+        public void onPluginDisable(PluginDisableEvent event) {
+            for (final FakeArrow fakeArrow : FakeArrow.arrows) {
+                fakeArrow.arrow.remove();
+            }
+        }
+
         public static final FakeArrowEventListener INSTANCE = new FakeArrowEventListener();
     }
 
@@ -224,29 +260,42 @@ public class FakeArrowLauncher {
             return null;
         }
 
+        private final FakeArrowLauncher launcher;
+
         private final AbstractArrow arrow;
 
         private final Events events = new Events();
 
+        private final double duration;
+
         @Nullable
-        private ParticleSpawner<?> trailParticle;
+        private final ParticleSpawner<?> particle;
 
-        private int movementTicks = 0;
+        private int lifetime = 0;
 
-        private final Location shootLocation;
+        private final Location launchLocation;
 
-        private FakeArrow(AbstractArrow arrow, @Nullable ParticleSpawner<?> trailParticle) {
+        private final ItemStack weapon;
+
+        private FakeArrow(FakeArrowLauncher launcher, AbstractArrow arrow) {
+            this.launcher = launcher;
             this.arrow = arrow;
-            this.trailParticle = trailParticle;
-            this.shootLocation = arrow.getLocation();
+            this.duration = launcher.getDuration();
+            this.particle = launcher.getParticle();
+            this.launchLocation = arrow.getLocation();
+            this.weapon = Objects.requireNonNullElse(arrow.getWeapon(), ItemStack.empty());
             arrows.add(this);
         }
 
-        public ItemStack getWeapon() {
-            return Objects.requireNonNull(arrow.getWeapon(), "FakeArrow Weapon must be nonnull");
+        public FakeArrowLauncher getLauncher() {
+            return launcher;
         }
 
-        public ItemStack getArrow() {
+        public ItemStack getWeapon() {
+            return weapon;
+        }
+
+        public ItemStack getItemStack() {
             return arrow.getItemStack();
         }
 
@@ -254,12 +303,16 @@ public class FakeArrowLauncher {
             return arrow;
         }
 
-        public int getMovementTicks() {
-            return movementTicks;
+        public int getLifetime() {
+            return lifetime;
         }
 
-        public Location getShootLocation() {
-            return shootLocation;
+        public double getDuration() {
+            return duration;
+        }
+
+        public Location getLaunchLocation() {
+            return launchLocation;
         }
 
         public void onEntityHit(Consumer<EntityHitEvent> listener) {
@@ -277,10 +330,13 @@ public class FakeArrowLauncher {
 
             private final Block block;
 
-            private BlockHitEvent(FakeArrow fakeArrow, Player shooter, Block block) {
+            private final BlockFace blockFace;
+
+            private BlockHitEvent(FakeArrow fakeArrow, Player shooter, Block block, BlockFace blockFace) {
                 this.fakeArrow = fakeArrow;
                 this.shooter = shooter;
                 this.block = block;
+                this.blockFace = blockFace;
             }
 
             public FakeArrow getFakeArrow() {
@@ -293,6 +349,10 @@ public class FakeArrowLauncher {
 
             public Block getBlock() {
                 return block;
+            }
+
+            public BlockFace getBlockFace() {
+                return blockFace;
             }
 
             @Override
