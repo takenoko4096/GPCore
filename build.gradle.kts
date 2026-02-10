@@ -43,13 +43,6 @@ tasks {
         mergeServiceFiles()
     }
 
-    // jar fileの生成位置をコンソールに出力する(これはなくてもok)
-    withType<Jar>().configureEach {
-        doLast {
-            println("Jar file was generated at: ${archiveFile.get().asFile.absolutePath}")
-        }
-    }
-
     withType<JavaCompile> {
         // ソースコードの文字列エンコード形式をUTF-8にする(これやらないとコンパイル時に日本語が文字化けする)
         options.encoding = Charsets.UTF_8.name()
