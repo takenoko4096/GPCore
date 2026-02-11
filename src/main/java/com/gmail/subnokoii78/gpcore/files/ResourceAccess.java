@@ -38,6 +38,7 @@ public class ResourceAccess {
         if (uri.getScheme().equals("jar")) {
             try (final FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
                 path = fs.getPath('/' + name);
+                consumer.accept(path);
             }
             catch (IOException e) {
                 throw new RuntimeException();
@@ -45,9 +46,8 @@ public class ResourceAccess {
         }
         else {
             path = Paths.get(uri);
+            consumer.accept(path);
         }
-
-        consumer.accept(path);
     }
 
     public void copy(Path destination) {
