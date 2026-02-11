@@ -1,7 +1,6 @@
 package com.gmail.subnokoii78.gpcore.files;
 
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.io.*;
 import java.net.URI;
@@ -14,22 +13,14 @@ import java.util.stream.Stream;
 
 @NullMarked
 public class ResourceAccess {
-    private final Path path;
+    private final String name;
 
     public ResourceAccess(String name) {
-        this.path = getSourcePath(name);
+        this.name = name;
     }
 
-    public Path getPath() {
-        return path;
-    }
-
-    public URI getUri() {
-        return path.toUri();
-    }
-
-    private Path getSourcePath(String resource) {
-        final URL url = ResourceAccess.class.getResource('/' + resource);
+    public void useAccess(Consumer<Path> consumer) {
+        final URL url = ResourceAccess.class.getResource('/' + name);
 
         if (url == null) {
             throw new RuntimeException("url is null");
@@ -43,54 +34,56 @@ public class ResourceAccess {
             throw new RuntimeException(e);
         }
 
-        final Path sourcePath;
+        final Path path;
         if (uri.getScheme().equals("jar")) {
             try (final FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
-                sourcePath = fs.getPath('/' + resource);
+                path = fs.getPath('/' + name);
             }
             catch (IOException e) {
                 throw new RuntimeException();
             }
         }
         else {
-            sourcePath = Paths.get(uri);
+            path = Paths.get(uri);
         }
 
-        return sourcePath;
+        consumer.accept(path);
     }
 
     public void copy(Path destination) {
-        if (Files.isRegularFile(path)) {
-            try {
-                Files.createDirectories(destination.getParent());
-                Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        try (final Stream<Path> stream = Files.walk(path)) {
-            stream.forEach(path -> {
+        useAccess(path -> {
+            if (Files.isRegularFile(path)) {
                 try {
-                    final Path relative = this.path.relativize(path);
-                    final Path target = destination.resolve(relative.toString());
-
-                    if (Files.isDirectory(path)) {
-                        Files.createDirectories(target);
-                    }
-                    else {
-                        Files.createDirectories(target.getParent());
-                        Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
-                    }
+                    Files.createDirectories(destination.getParent());
+                    Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
                 }
                 catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            });
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+            }
+
+            try (final Stream<Path> stream = Files.walk(path)) {
+                stream.forEach(origin -> {
+                    try {
+                        final Path relative = path.relativize(origin);
+                        final Path target = destination.resolve(relative.toString());
+
+                        if (Files.isDirectory(origin)) {
+                            Files.createDirectories(target);
+                        }
+                        else {
+                            Files.createDirectories(target.getParent());
+                            Files.copy(origin, target, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
