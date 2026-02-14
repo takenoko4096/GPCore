@@ -74,10 +74,11 @@ public class ResourceAccess {
                         else {
                             Files.createDirectories(target.getParent());
 
-                            final CopyHandle handle = new CopyHandle(origin, target);
+                            final CopyHandle handle = new CopyHandle(target);
                             handler.accept(handle);
                             if (!handle.ignored) {
                                 Files.copy(origin, target, StandardCopyOption.REPLACE_EXISTING);
+                                handle.processor.accept(target);
                             }
                         }
                     }
@@ -93,14 +94,13 @@ public class ResourceAccess {
     }
 
     public static final class CopyHandle {
-        private final Path from;
-
         private final Path to;
 
         private boolean ignored;
 
-        private CopyHandle(Path from, Path to) {
-            this.from = from;
+        private Consumer<Path> processor = (p) -> {};
+
+        private CopyHandle(Path to) {
             this.to = to;
         }
 
@@ -108,12 +108,12 @@ public class ResourceAccess {
             ignored = true;
         }
 
-        public Path getFrom() {
-            return from;
-        }
-
         public Path getTo() {
             return to;
+        }
+
+        public void postProcess(Consumer<Path> processor) {
+            this.processor = processor;
         }
     }
 }
