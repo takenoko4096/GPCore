@@ -50,7 +50,7 @@ public class ResourceAccess {
         }
     }
 
-    public void copy(Path destination) {
+    public void copy(Path destination, Consumer<CopyHandle> handler) {
         useAccess(path -> {
             if (Files.isRegularFile(path)) {
                 try {
@@ -73,7 +73,12 @@ public class ResourceAccess {
                         }
                         else {
                             Files.createDirectories(target.getParent());
-                            Files.copy(origin, target, StandardCopyOption.REPLACE_EXISTING);
+
+                            final CopyHandle handle = new CopyHandle(origin, target);
+                            handler.accept(handle);
+                            if (!handle.ignored) {
+                                Files.copy(origin, target, StandardCopyOption.REPLACE_EXISTING);
+                            }
                         }
                     }
                     catch (IOException e) {
@@ -85,5 +90,30 @@ public class ResourceAccess {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    public static final class CopyHandle {
+        private final Path from;
+
+        private final Path to;
+
+        private boolean ignored;
+
+        private CopyHandle(Path from, Path to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        public void ignore() {
+            ignored = true;
+        }
+
+        public Path getFrom() {
+            return from;
+        }
+
+        public Path getTo() {
+            return to;
+        }
     }
 }
