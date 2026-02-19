@@ -24,14 +24,14 @@ public abstract class AbstractEnumerationArgument<T extends Enum<T> & CommandArg
 
     protected abstract Class<T> getEnumClass();
 
-    protected abstract String getErrorMessage(String unknownString);
+    protected String getErrorMessage(String unknownString) {
+        return String.format("%s は列挙型引数 %s として無効な値です", unknownString, getEnumClass().getSimpleName());
+    }
 
     @Override
     public final T convert(String nativeType) throws CommandSyntaxException {
         try {
-            return (T) getEnumClass()
-                .getMethod("valueOf", String.class)
-                .invoke(null, nativeType.toUpperCase(Locale.ROOT));
+            return (T) getEnumClass().getMethod("valueOf", String.class).invoke(null, nativeType.toUpperCase(Locale.ROOT));
         }
         catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
             throw ERROR.create(getErrorMessage(nativeType));
@@ -42,9 +42,7 @@ public abstract class AbstractEnumerationArgument<T extends Enum<T> & CommandArg
     public final <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
         final T[] values;
         try {
-            values = (T[]) getEnumClass()
-                .getMethod("values")
-                .invoke(null);
+            values = (T[]) getEnumClass().getMethod("values").invoke(null);
         }
         catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);

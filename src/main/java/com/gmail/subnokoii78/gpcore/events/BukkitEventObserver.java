@@ -7,23 +7,24 @@ import io.papermc.paper.event.player.PlayerStopUsingItemEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
-import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class BukkitEventObserver implements Listener {
     private final GameTickScheduler scheduler = new GameTickScheduler(this::onTick);
@@ -41,9 +42,6 @@ public class BukkitEventObserver implements Listener {
 
         private final Map<Player, Object> dataStorage = new HashMap<>();
 
-        /**
-         * @param eventId recommended: .class.getName()
-         */
         private TimeStorage(String eventId) {
             if (storages.containsKey(eventId)) {
                 throw new IllegalArgumentException();
@@ -76,6 +74,10 @@ public class BukkitEventObserver implements Listener {
                 return new TimeStorage(eventId);
             }
         }
+
+        private static TimeStorage getStorage(Class<? extends Event> clazz) {
+            return getStorage(clazz.getName());
+        }
     }
 
     public void onTick() {
@@ -98,24 +100,24 @@ public class BukkitEventObserver implements Listener {
 
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent event) {
-        TimeStorage.getStorage(PlayerDropItemEvent.class.getName()).setTime(event.getPlayer());
+        TimeStorage.getStorage(PlayerDropItemEvent.class).setTime(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-        final long lastFiredTime = TimeStorage.getStorage(PlayerInteractEntityEvent.class.getName()).getTime(event.getPlayer());
+        final long lastFiredTime = TimeStorage.getStorage(PlayerInteractEntityEvent.class).getTime(event.getPlayer());
 
         // おそらくバグのための2回目の発火を抑制
         if (System.currentTimeMillis() - lastFiredTime < 50L) return;
 
-        TimeStorage.getStorage(PlayerInteractEntityEvent.class.getName()).setTime(event.getPlayer());
+        TimeStorage.getStorage(PlayerInteractEntityEvent.class).setTime(event.getPlayer());
 
         new GameTickScheduler(() -> {
             // priorityがLOWESTだと少し速く発火してしまうのでゲームティックに合わせる
             GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK)
                 .dispatch(new PlayerClickEvent(
                     event.getPlayer(),
-                    event.getPlayer().getEquipment() == null ? null : event.getPlayer().getEquipment().getItem(event.getHand()),
+                    event.getPlayer().getEquipment().getItem(event.getHand()),
                     event,
                     PlayerClickEvent.Click.RIGHT,
                     event.getRightClicked()
@@ -126,11 +128,11 @@ public class BukkitEventObserver implements Listener {
     @EventHandler
     public void onPrePlayerAttack(PrePlayerAttackEntityEvent event) {
         final Player player = event.getPlayer();
-        TimeStorage.getStorage(PrePlayerAttackEntityEvent.class.getName()).setTime(player);
+        TimeStorage.getStorage(PrePlayerAttackEntityEvent.class).setTime(player);
         GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK)
             .dispatch(new PlayerClickEvent(
                 event.getPlayer(),
-                event.getPlayer().getEquipment() == null ? null : event.getPlayer().getEquipment().getItem(EquipmentSlot.HAND),
+                event.getPlayer().getEquipment().getItem(EquipmentSlot.HAND),
                 event,
                 PlayerClickEvent.Click.LEFT,
                 event.getAttacked()
@@ -140,10 +142,10 @@ public class BukkitEventObserver implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         // おそらくPlayerInteractEventよりも早い段階で呼び出される
-        TimeStorage.getStorage(BlockBreakEvent.class.getName()).setTime(event.getPlayer());
+        TimeStorage.getStorage(BlockBreakEvent.class).setTime(event.getPlayer());
         GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK).dispatch(new PlayerClickEvent(
             event.getPlayer(),
-            event.getPlayer().getEquipment() == null ? null : event.getPlayer().getEquipment().getItemInMainHand(),
+            event.getPlayer().getEquipment().getItemInMainHand(),
             event,
             PlayerClickEvent.Click.LEFT,
             event.getBlock()
@@ -169,9 +171,9 @@ public class BukkitEventObserver implements Listener {
                 }
             }
 
-            TimeStorage.getStorage(PlayerInteractEvent.class.getName()).setTime(player);
+            TimeStorage.getStorage(PlayerInteractEvent.class).setTime(player);
 
-            final long interactEntityEventTime = TimeStorage.getStorage(PlayerInteractEntityEvent.class.getName()).getTime(player);
+            final long interactEntityEventTime = TimeStorage.getStorage(PlayerInteractEntityEvent.class).getTime(player);
 
             // エンティティへの右クリックと同時のとき発火しない
             if (System.currentTimeMillis() - interactEntityEventTime < 50L) return;
@@ -180,7 +182,7 @@ public class BukkitEventObserver implements Listener {
                 GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK)
                     .dispatch(new PlayerClickEvent(
                         player,
-                        event.getItem(),
+                        Objects.requireNonNullElse(event.getItem(), ItemStack.empty()),
                         event,
                         PlayerClickEvent.Click.RIGHT,
                         block
@@ -190,7 +192,7 @@ public class BukkitEventObserver implements Listener {
                 GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK)
                     .dispatch(new PlayerClickEvent(
                         player,
-                        event.getItem(),
+                        Objects.requireNonNullElse(event.getItem(), ItemStack.empty()),
                         event,
                         PlayerClickEvent.Click.RIGHT
                     ));
@@ -200,11 +202,11 @@ public class BukkitEventObserver implements Listener {
         }
 
         new SystemTimeScheduler(() -> {
-            final long dropEventTime = TimeStorage.getStorage(PlayerDropItemEvent.class.getName()).getTime(player);
-            final long interactEventTime = TimeStorage.getStorage(PlayerInteractEvent.class.getName()).getTime(player);
-            final long interactEntityEventTime = TimeStorage.getStorage(PlayerInteractEntityEvent.class.getName()).getTime(player);
-            final long preAttackTime = TimeStorage.getStorage(PrePlayerAttackEntityEvent.class.getName()).getTime(player);
-            final long blockBreakTime = TimeStorage.getStorage(BlockBreakEvent.class.getName()).getTime(player);
+            final long dropEventTime = TimeStorage.getStorage(PlayerDropItemEvent.class).getTime(player);
+            final long interactEventTime = TimeStorage.getStorage(PlayerInteractEvent.class).getTime(player);
+            final long interactEntityEventTime = TimeStorage.getStorage(PlayerInteractEntityEvent.class).getTime(player);
+            final long preAttackTime = TimeStorage.getStorage(PrePlayerAttackEntityEvent.class).getTime(player);
+            final long blockBreakTime = TimeStorage.getStorage(BlockBreakEvent.class).getTime(player);
 
             // ドロップと同時のとき発火しない
             if (System.currentTimeMillis() - dropEventTime < 50L) return;
@@ -222,7 +224,7 @@ public class BukkitEventObserver implements Listener {
                     GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK)
                         .dispatch(new PlayerClickEvent(
                             player,
-                            event.getItem(),
+                            Objects.requireNonNullElse(event.getItem(), ItemStack.empty()),
                             event,
                             PlayerClickEvent.Click.LEFT,
                             block
@@ -234,7 +236,7 @@ public class BukkitEventObserver implements Listener {
                     GPCore.events.getDispatcher(EventTypes.PLAYER_CLICK)
                         .dispatch(new PlayerClickEvent(
                             player,
-                            event.getItem(),
+                            Objects.requireNonNullElse(event.getItem(), ItemStack.empty()),
                             event,
                             PlayerClickEvent.Click.LEFT
                         ));
@@ -245,7 +247,7 @@ public class BukkitEventObserver implements Listener {
 
     @EventHandler
     public void onPlayerStopUsingItem(PlayerStopUsingItemEvent event) {
-        final TimeStorage timeStorage = TimeStorage.getStorage(PlayerStopUsingItemEvent.class.getName());
+        final TimeStorage timeStorage = TimeStorage.getStorage(PlayerStopUsingItemEvent.class);
         timeStorage.setTime(event.getPlayer());
         timeStorage.setData(event.getPlayer(), event);
     }
@@ -255,7 +257,7 @@ public class BukkitEventObserver implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (!(event.getProjectile() instanceof Projectile projectile)) return;
 
-        final TimeStorage timeStorage = TimeStorage.getStorage(PlayerStopUsingItemEvent.class.getName());
+        final TimeStorage timeStorage = TimeStorage.getStorage(PlayerStopUsingItemEvent.class);
         final long playerStopUsingItemTime = timeStorage.getTime(player);
 
         if (System.currentTimeMillis() - playerStopUsingItemTime > 50L) return;

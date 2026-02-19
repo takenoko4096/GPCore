@@ -12,7 +12,6 @@ import org.jspecify.annotations.Nullable;
 public class PlayerClickEvent extends CancellableEvent {
     private final Player player;
 
-    @Nullable
     private final ItemStack itemStack;
 
     private final Click click;
@@ -25,7 +24,7 @@ public class PlayerClickEvent extends CancellableEvent {
     @Nullable
     private final Entity entity;
 
-    protected PlayerClickEvent(Player player, @Nullable ItemStack itemStack, Cancellable event, Click click) {
+    protected PlayerClickEvent(Player player,ItemStack itemStack, Cancellable event, Click click) {
         super(event);
         this.player = player;
         this.itemStack = itemStack;
@@ -35,7 +34,7 @@ public class PlayerClickEvent extends CancellableEvent {
         this.entity = null;
     }
 
-    protected PlayerClickEvent(Player player, @Nullable ItemStack itemStack, Cancellable event, Click click, Block block) {
+    protected PlayerClickEvent(Player player, ItemStack itemStack, Cancellable event, Click click, Block block) {
         super(event);
         this.player = player;
         this.itemStack = itemStack;
@@ -45,7 +44,7 @@ public class PlayerClickEvent extends CancellableEvent {
         this.entity = null;
     }
 
-    protected PlayerClickEvent(Player player, @Nullable ItemStack itemStack, Cancellable event, Click click, Entity entity) {
+    protected PlayerClickEvent(Player player, ItemStack itemStack, Cancellable event, Click click, Entity entity) {
         super(event);
         this.player = player;
         this.itemStack = itemStack;
@@ -86,14 +85,7 @@ public class PlayerClickEvent extends CancellableEvent {
         else return entity;
     }
 
-    public boolean hasItem() {
-        return itemStack != null;
-    }
-
     public ItemStack getItem() {
-        if (itemStack == null) {
-            throw new IllegalStateException("アイテムを手に持っていないため、アイテムを取得できませんでした");
-        }
         return itemStack;
     }
 
