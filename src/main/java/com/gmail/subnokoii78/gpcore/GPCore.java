@@ -9,6 +9,7 @@ import com.gmail.subnokoii78.gpcore.ui.container.ContainerInteraction;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.event.raid.RaidSpawnWaveEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.jspecify.annotations.NullMarked;

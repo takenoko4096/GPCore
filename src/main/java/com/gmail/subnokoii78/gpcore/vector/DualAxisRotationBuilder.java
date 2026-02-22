@@ -6,6 +6,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -30,6 +31,11 @@ public class DualAxisRotationBuilder implements VectorBuilder<DualAxisRotationBu
     public DualAxisRotationBuilder(float yaw, float pitch) {
         this.yaw = yaw;
         this.pitch = pitch;
+    }
+
+    @Override
+    public List<Float> components() {
+        return List.of(yaw, pitch);
     }
 
     @Override

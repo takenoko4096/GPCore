@@ -3,6 +3,7 @@ package com.gmail.subnokoii78.gpcore.vector;
 import com.gmail.subnokoii78.gpcore.generic.TriFunction;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -19,6 +20,12 @@ public interface VectorBuilder<T extends VectorBuilder<T, U>, U extends Number> 
      * @return 一致していれば真
      */
     boolean equals(T other);
+
+    /**
+     * 各成分をリストとして取得します。
+     * @return 各成分が順に格納されたリスト
+     */
+    List<U> components();
 
     /**
      * このベクトルのそれぞれの成分に対して関数を呼び出し、その結果で成分の値を上書きします。

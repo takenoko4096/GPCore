@@ -4,6 +4,7 @@ import com.gmail.subnokoii78.gpcore.generic.TriFunction;
 import org.joml.Quaternionf;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -26,6 +27,11 @@ public final class TripleAxisRotationBuilder implements VectorBuilder<TripleAxis
         this.yaw = 0;
         this.pitch = 0;
         this.roll = 0;
+    }
+
+    @Override
+    public List<Float> components() {
+        return List.of(yaw, pitch, roll);
     }
 
     @Override

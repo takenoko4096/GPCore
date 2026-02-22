@@ -9,6 +9,7 @@ import org.bukkit.entity.Entity;
 import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -35,6 +36,11 @@ public class Vector3Builder implements VectorBuilder<Vector3Builder, Double> {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    @Override
+    public List<Double> components() {
+        return List.of(x, y, z);
     }
 
     @Override

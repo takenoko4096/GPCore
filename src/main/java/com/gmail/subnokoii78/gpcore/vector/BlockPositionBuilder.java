@@ -7,6 +7,7 @@ import org.bukkit.block.Block;
 import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -51,6 +52,11 @@ public class BlockPositionBuilder implements VectorBuilder<BlockPositionBuilder,
     public BlockPositionBuilder z(int value) {
         z = value;
         return this;
+    }
+
+    @Override
+    public List<Integer> components() {
+        return List.of(x, y, z);
     }
 
     @Override

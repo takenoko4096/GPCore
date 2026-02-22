@@ -65,6 +65,10 @@ public final class OrientedBoundingBox {
      * @param depth 奥行きの長さ
      */
     public OrientedBoundingBox(double width, double height, double depth) {
+        if (width < 0 || height < 0 || depth < 0) {
+            throw new IllegalArgumentException("負のサイズは許容されません");
+        }
+
         this.width = width;
         this.height = height;
         this.depth = depth;
