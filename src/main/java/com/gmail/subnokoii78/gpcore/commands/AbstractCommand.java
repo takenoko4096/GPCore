@@ -35,9 +35,9 @@ public abstract class AbstractCommand {
     }
 
     protected int failure(CommandContext<CommandSourceStack> context, String message) {
-        final TextComponent.Builder builder = Component.text("コマンドの実行に失敗しました: ")
+        final TextComponent.Builder builder = Component.text()
+            .content("コマンドの実行に失敗しました: ")
             .color(NamedTextColor.RED)
-            .toBuilder()
             .appendNewline()
             .append(Component.text("    "))
             .append(Component.text(message).color(NamedTextColor.RED));
@@ -47,9 +47,9 @@ public abstract class AbstractCommand {
     }
 
     protected int failure(CommandContext<CommandSourceStack> context, Throwable cause) {
-        final TextComponent.Builder builder = Component.text("コマンドの実行に失敗しました: ")
+        final TextComponent.Builder builder = Component.text()
+            .content("コマンドの実行に失敗しました: ")
             .color(NamedTextColor.RED)
-            .toBuilder()
             .appendNewline()
             .append(Component.text("    "))
             .append(Component.text(

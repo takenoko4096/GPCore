@@ -48,6 +48,6 @@ tasks {
         options.encoding = Charsets.UTF_8.name()
 
         // 各種警告を無視(これがないと永遠にビルドできない)
-        options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-unchecked"))
+        options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:unchecked"))
     }
 }
