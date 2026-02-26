@@ -1,5 +1,8 @@
 package com.gmail.subnokoii78.gpcore.files;
 
+import com.gmail.subnokoii78.gpcore.events.EventType;
+import com.gmail.subnokoii78.gpcore.events.Events;
+import com.gmail.subnokoii78.gpcore.events.IEvent;
 import org.jspecify.annotations.NullMarked;
 
 import java.io.*;
@@ -50,7 +53,7 @@ public class ResourceAccess {
         }
     }
 
-    public void copy(Path destination, Consumer<CopyHandle> handler) {
+    public void copy(Path destination, Consumer<Events> eventHandler) {
         useAccess(path -> {
             if (Files.isRegularFile(path)) {
                 try {
@@ -74,11 +77,13 @@ public class ResourceAccess {
                         else {
                             Files.createDirectories(target.getParent());
 
-                            final CopyHandle handle = new CopyHandle(target);
-                            handler.accept(handle);
-                            if (!handle.ignored) {
+                            final Events events = new Events();
+                            eventHandler.accept(events);
+                            final ResourceCopyBeforeEvent beforeEvent = new ResourceCopyBeforeEvent(origin, target);
+                            events.getDispatcher(RESOURCE_COPY_BEFORE).dispatch(beforeEvent);
+                            if (!beforeEvent.ignored) {
                                 Files.copy(origin, target, StandardCopyOption.REPLACE_EXISTING);
-                                handle.processor.accept(target);
+                                events.getDispatcher(RESOURCE_COPY_AFTER).dispatch(new ResourceCopyAfterEvent(origin, target));
                             }
                         }
                     }
@@ -93,27 +98,58 @@ public class ResourceAccess {
         });
     }
 
-    public static final class CopyHandle {
-        private final Path to;
+    public static abstract class AbstractResourceCopyEvent implements IEvent {
+        protected final Path from;
 
+        protected final Path to;
+
+        protected AbstractResourceCopyEvent(Path from, Path to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        public Path getFrom() {
+            return from;
+        }
+
+        public Path getTo() {
+            return to;
+        }
+    }
+
+    public static final class ResourceCopyBeforeEvent extends AbstractResourceCopyEvent {
         private boolean ignored;
 
-        private Consumer<Path> processor = (p) -> {};
+        private ResourceCopyBeforeEvent(Path from, Path to) {
+            super(from, to);
+        }
 
-        private CopyHandle(Path to) {
-            this.to = to;
+        @Override
+        public EventType<? extends IEvent> getType() {
+            return RESOURCE_COPY_BEFORE;
         }
 
         public void ignore() {
             ignored = true;
         }
 
-        public Path getTo() {
-            return to;
-        }
-
-        public void postProcess(Consumer<Path> processor) {
-            this.processor = processor;
+        public void unignore() {
+            ignored = false;
         }
     }
+
+    public static final class ResourceCopyAfterEvent extends AbstractResourceCopyEvent {
+        private ResourceCopyAfterEvent(Path from, Path to) {
+            super(from, to);
+        }
+
+        @Override
+        public EventType<? extends IEvent> getType() {
+            return RESOURCE_COPY_AFTER;
+        }
+    }
+
+    public static final EventType<ResourceCopyBeforeEvent> RESOURCE_COPY_BEFORE = new EventType<>(ResourceCopyBeforeEvent.class);
+
+    public static final EventType<ResourceCopyAfterEvent> RESOURCE_COPY_AFTER = new EventType<>(ResourceCopyAfterEvent.class);
 }

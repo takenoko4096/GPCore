@@ -2,8 +2,6 @@ package com.gmail.subnokoii78.gpcore.vector;
 
 import org.jspecify.annotations.NullMarked;
 
-import java.util.Set;
-
 @NullMarked
 public final class BoundingSphere {
     private final Vector3Builder center;
