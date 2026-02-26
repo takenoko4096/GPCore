@@ -15,6 +15,10 @@ public abstract class CancellableEvent implements IEvent {
         event.setCancelled(true);
     }
 
+    public void uncancel() {
+        event.setCancelled(false);
+    }
+
     @Override
     public abstract EventType<? extends CancellableEvent> getType();
 }

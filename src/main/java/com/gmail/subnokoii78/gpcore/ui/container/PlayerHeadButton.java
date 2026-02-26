@@ -6,12 +6,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.function.Consumer;
 
+@NullMarked
 public class PlayerHeadButton extends ItemButton {
-    protected PlayerHeadButton(@NotNull ItemStackBuilder itemStackBuilder) {
+    protected PlayerHeadButton(ItemStackBuilder itemStackBuilder) {
         super(itemStackBuilder);
     }
 
@@ -20,56 +21,56 @@ public class PlayerHeadButton extends ItemButton {
     }
 
     @Override
-    public @NotNull PlayerHeadButton name(@NotNull TextComponent component) {
+    public PlayerHeadButton name(TextComponent component) {
         return (PlayerHeadButton) super.name(component);
     }
 
     @Override
-    public @NotNull PlayerHeadButton lore(@NotNull TextComponent component) {
-        return (PlayerHeadButton) super.lore(component);
+    public PlayerHeadButton loreLine(TextComponent component) {
+        return (PlayerHeadButton) super.loreLine(component);
     }
 
     @Override
-    public @NotNull PlayerHeadButton amount(int amount) {
+    public PlayerHeadButton amount(int amount) {
         return (PlayerHeadButton) super.amount(amount);
     }
 
     @Override
-    public @NotNull PlayerHeadButton glint(boolean flag) {
+    public PlayerHeadButton glint(boolean flag) {
         return (PlayerHeadButton) super.glint(flag);
     }
 
     @Override
-    public @NotNull PlayerHeadButton itemModel(@NotNull NamespacedKey id) {
+    public PlayerHeadButton itemModel(NamespacedKey id) {
         return (PlayerHeadButton) super.itemModel(id);
     }
 
     @Override
-    public @NotNull PlayerHeadButton hideTooltip() {
+    public PlayerHeadButton hideTooltip() {
         return (PlayerHeadButton) super.hideTooltip();
     }
 
     @Override
-    public @NotNull PlayerHeadButton clickSound(@NotNull ItemButtonClickSound sound) {
+    public PlayerHeadButton clickSound(ItemButtonClickSound sound) {
         return (PlayerHeadButton) super.clickSound(sound);
     }
 
     @Override
-    public @NotNull PlayerHeadButton clickSound(@NotNull Sound sound, float volume, float pitch) {
+    public PlayerHeadButton clickSound(Sound sound, float volume, float pitch) {
         return (PlayerHeadButton) super.clickSound(sound, volume, pitch);
     }
 
     @Override
-    public @NotNull PlayerHeadButton onClick(Consumer<ItemButtonClickEvent> listener) {
+    public PlayerHeadButton onClick(Consumer<ItemButtonClickEvent> listener) {
         return (PlayerHeadButton) super.onClick(listener);
     }
 
     @Override
-    public @NotNull PlayerHeadButton copy() {
+    public PlayerHeadButton copy() {
         return copy(this, PlayerHeadButton::new);
     }
 
-    public @NotNull PlayerHeadButton player(@NotNull String gamerTag) {
+    public PlayerHeadButton player(String gamerTag) {
         itemStackBuilder.playerProfile(Bukkit.getOfflinePlayer(gamerTag).getPlayerProfile());
         return this;
     }

@@ -51,7 +51,7 @@ public final class CommandStorageAccess {
         }
     }
 
-    public MojangsonCompound get() {
+    public MojangsonCompound reference() {
         return compound;
     }
 

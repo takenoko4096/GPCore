@@ -3,15 +3,16 @@ package com.gmail.subnokoii78.gpcore.ui.container;
 import com.gmail.subnokoii78.gpcore.events.EventType;
 import com.gmail.subnokoii78.gpcore.events.IEvent;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public interface ContainerInteractionEvent extends IEvent {
-    @NotNull ContainerInteraction getInteraction();
+    ContainerInteraction getInteraction();
 
-    @NotNull Player getPlayer();
+    Player getPlayer();
 
     @Override
-    @NotNull EventType<? extends IEvent> getType();
+    EventType<? extends IEvent> getType();
 
     EventType<InteractionCloseEvent> INTERACTION_CLOSE = new EventType<>(InteractionCloseEvent.class);
 

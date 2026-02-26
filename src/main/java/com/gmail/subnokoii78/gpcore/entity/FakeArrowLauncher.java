@@ -19,6 +19,7 @@ import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -31,7 +32,7 @@ import java.util.function.Consumer;
 
 @NullMarked
 public class FakeArrowLauncher {
-    private final Player shooter;
+    private final ProjectileSource source;
 
     private double power = 1.0;
 
@@ -48,8 +49,8 @@ public class FakeArrowLauncher {
     @Nullable
     private ParticleSpawner<?> particle = null;
 
-    public FakeArrowLauncher(Player shooter) {
-        this.shooter = shooter;
+    public FakeArrowLauncher(ProjectileSource source) {
+        this.source = source;
     }
 
     private Class<? extends AbstractArrow> getEntityClassOf(ItemStack itemStack) {
@@ -62,7 +63,7 @@ public class FakeArrowLauncher {
     }
 
     private void initializeArrowProperties(AbstractArrow entity, ItemStack weapon, ItemStack arrow) {
-        entity.setShooter(shooter);
+        entity.setShooter(source);
         entity.setHasLeftShooter(false);
         entity.setWeapon(weapon);
 
@@ -83,23 +84,18 @@ public class FakeArrowLauncher {
         }
     }
 
-    public FakeArrow launch(ItemStack weapon, ItemStack arrow) {
-        final AbstractArrow projectile = shooter.launchProjectile(
+    public FakeArrow launch(ItemStack weapon, ItemStack arrow, DualAxisRotationBuilder rotation) {
+        final AbstractArrow projectile = source.launchProjectile(
             getEntityClassOf(arrow),
-            DualAxisRotationBuilder.from(shooter)
-                .getDirection3d()
-                .scale(power)
-                .toBukkitVector(),
-            entity -> {
-                initializeArrowProperties(entity, weapon, arrow);
-            }
+            rotation.getDirection3d().scale(power).toBukkitVector(),
+            entity -> initializeArrowProperties(entity, weapon, arrow)
         );
 
         return new FakeArrow(this, projectile);
     }
 
-    public Player getShooter() {
-        return shooter;
+    public ProjectileSource getSource() {
+        return source;
     }
 
     public double getPower() {
@@ -165,6 +161,10 @@ public class FakeArrowLauncher {
         return this;
     }
 
+    public static PlayerFakeArrowLauncher ofPlayer(Player player) {
+        return new PlayerFakeArrowLauncher(player);
+    }
+
     public static final class FakeArrowEventListener extends BukkitRunnable implements Listener {
         private FakeArrowEventListener() {}
 
@@ -191,8 +191,10 @@ public class FakeArrowLauncher {
             final FakeArrow fakeArrow = FakeArrow.getFakeArrow(event.getEntity());
             if (fakeArrow == null) return;
 
-            if (!(fakeArrow.arrow.getShooter() instanceof Player shooter)) {
-                throw new IllegalStateException("shooter must be nonnull player");
+            final ProjectileSource source = fakeArrow.arrow.getShooter();
+
+            if (source == null) {
+                throw new IllegalStateException("Projectile source must be non-null");
             }
 
             final Block hitBlock = event.getHitBlock();
@@ -200,7 +202,7 @@ public class FakeArrowLauncher {
                 final BlockFace hitBlockFace = Objects.requireNonNull(event.getHitBlockFace());
                 fakeArrow.events.getDispatcher(FakeArrow.BLOCK_HIT).dispatch(new FakeArrow.BlockHitEvent(
                     fakeArrow,
-                    shooter,
+                    source,
                     hitBlock,
                     hitBlockFace
                 ));
@@ -211,7 +213,7 @@ public class FakeArrowLauncher {
                 fakeArrow.events.getDispatcher(FakeArrow.ENTITY_HIT).dispatch(new FakeArrow.EntityHitEvent(
                     event,
                     fakeArrow,
-                    shooter,
+                    source,
                     hitEntity
                 ));
             }
@@ -326,15 +328,15 @@ public class FakeArrowLauncher {
         public static final class BlockHitEvent implements IEvent {
             private final FakeArrow fakeArrow;
 
-            private final Player shooter;
+            private final ProjectileSource source;
 
             private final Block block;
 
             private final BlockFace blockFace;
 
-            private BlockHitEvent(FakeArrow fakeArrow, Player shooter, Block block, BlockFace blockFace) {
+            private BlockHitEvent(FakeArrow fakeArrow, ProjectileSource source, Block block, BlockFace blockFace) {
                 this.fakeArrow = fakeArrow;
-                this.shooter = shooter;
+                this.source = source;
                 this.block = block;
                 this.blockFace = blockFace;
             }
@@ -343,8 +345,8 @@ public class FakeArrowLauncher {
                 return fakeArrow;
             }
 
-            public Player getShooter() {
-                return shooter;
+            public ProjectileSource getSource() {
+                return source;
             }
 
             public Block getBlock() {
@@ -364,14 +366,14 @@ public class FakeArrowLauncher {
         public static final class EntityHitEvent extends CancellableEvent {
             private final FakeArrow fakeArrow;
 
-            private final Player shooter;
+            private final ProjectileSource source;
 
             private final Entity entity;
 
-            private EntityHitEvent(ProjectileHitEvent event, FakeArrow fakeArrow, Player shooter, Entity entity) {
+            private EntityHitEvent(ProjectileHitEvent event, FakeArrow fakeArrow, ProjectileSource source, Entity entity) {
                 super(event);
                 this.fakeArrow = fakeArrow;
-                this.shooter = shooter;
+                this.source = source;
                 this.entity = entity;
             }
 
@@ -379,8 +381,8 @@ public class FakeArrowLauncher {
                 return fakeArrow;
             }
 
-            public Player getShooter() {
-                return shooter;
+            public ProjectileSource getSource() {
+                return source;
             }
 
             public Entity getEntity() {
@@ -396,5 +398,20 @@ public class FakeArrowLauncher {
         private static final EventType<BlockHitEvent> BLOCK_HIT = new EventType<>(BlockHitEvent.class);
 
         private static final EventType<EntityHitEvent> ENTITY_HIT = new EventType<>(EntityHitEvent.class);
+    }
+
+    public static final class PlayerFakeArrowLauncher extends FakeArrowLauncher {
+        private PlayerFakeArrowLauncher(Player source) {
+            super(source);
+        }
+
+        @Override
+        public Player getSource() {
+            return (Player) super.getSource();
+        }
+
+        public FakeArrow launch(ItemStack weapon, ItemStack arrow) {
+            return super.launch(weapon, arrow, DualAxisRotationBuilder.from(getSource()));
+        }
     }
 }

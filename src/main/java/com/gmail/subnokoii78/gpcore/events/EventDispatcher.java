@@ -1,11 +1,12 @@
 package com.gmail.subnokoii78.gpcore.events;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@NullMarked
 public class EventDispatcher<T extends IEvent> {
     private final EventType<T> type;
 
@@ -13,15 +14,15 @@ public class EventDispatcher<T extends IEvent> {
 
     private int maxId = Integer.MIN_VALUE;
 
-    public EventDispatcher(@NotNull EventType<T> eventType) {
+    protected EventDispatcher(EventType<T> eventType) {
         this.type = eventType;
     }
 
-    public @NotNull EventType<T> getType() {
+    public EventType<T> getType() {
         return type;
     }
 
-    public int add(@NotNull Consumer<T> handler) {
+    public int add(Consumer<T> handler) {
         final int id = maxId++;
         handlers.put(id, handler);
         return id;
@@ -33,6 +34,14 @@ public class EventDispatcher<T extends IEvent> {
             return true;
         }
         else return false;
+    }
+
+    public boolean clear() {
+        if (handlers.isEmpty()) return false;
+        else {
+            handlers.clear();
+            return true;
+        }
     }
 
     public void dispatch(T event) {

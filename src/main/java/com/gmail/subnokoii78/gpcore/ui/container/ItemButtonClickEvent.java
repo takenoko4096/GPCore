@@ -2,8 +2,9 @@ package com.gmail.subnokoii78.gpcore.ui.container;
 
 import com.gmail.subnokoii78.gpcore.events.EventType;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class ItemButtonClickEvent implements ContainerInteractionEvent {
     private final Player player;
 
@@ -13,7 +14,7 @@ public class ItemButtonClickEvent implements ContainerInteractionEvent {
 
     private final ItemButton button;
 
-    protected ItemButtonClickEvent(@NotNull Player player, @NotNull ContainerInteraction interaction, int slot, @NotNull ItemButton button) {
+    protected ItemButtonClickEvent(Player player, ContainerInteraction interaction, int slot, ItemButton button) {
         this.player = player;
         this.interaction = interaction;
         this.slot = slot;
@@ -21,12 +22,12 @@ public class ItemButtonClickEvent implements ContainerInteractionEvent {
     }
 
     @Override
-    public @NotNull Player getPlayer() {
+    public Player getPlayer() {
         return player;
     }
 
     @Override
-    public @NotNull ContainerInteraction getInteraction() {
+    public ContainerInteraction getInteraction() {
         return interaction;
     }
 
@@ -34,7 +35,7 @@ public class ItemButtonClickEvent implements ContainerInteractionEvent {
         return slot;
     }
 
-    public @NotNull ItemButton getClickedButton() {
+    public ItemButton getClickedButton() {
         return button;
     }
 
@@ -43,7 +44,7 @@ public class ItemButtonClickEvent implements ContainerInteractionEvent {
     }
 
     @Override
-    public @NotNull EventType<ItemButtonClickEvent> getType() {
+    public EventType<ItemButtonClickEvent> getType() {
         return ITEM_BUTTON_CLICK;
     }
 }

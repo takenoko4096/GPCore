@@ -1,6 +1,6 @@
 package com.gmail.subnokoii78.gpcore.ui.container;
 
-import com.gmail.subnokoii78.gpcore.events.EventDispatcher;
+import com.gmail.subnokoii78.gpcore.events.Events;
 import com.gmail.subnokoii78.gpcore.itemstack.ItemStackBuilder;
 import com.gmail.subnokoii78.gpcore.itemstack.ItemStackCustomDataAccess;
 import com.gmail.takenokoii78.mojangson.MojangsonPath;
@@ -13,29 +13,30 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@NullMarked
 public class ItemButton {
     protected final ItemStackBuilder itemStackBuilder;
 
     @Nullable
     protected ItemButtonClickSound sound = null;
 
-    private final EventDispatcher<ItemButtonClickEvent> itemButtonClickEventDispatcher = new EventDispatcher<>(ItemButtonClickEvent.ITEM_BUTTON_CLICK);
+    private final Events events = new Events();
 
-    protected ItemButton(@NotNull ItemStackBuilder itemStackBuilder) {
+    protected ItemButton(ItemStackBuilder itemStackBuilder) {
         this.itemStackBuilder = itemStackBuilder;
     }
 
-    protected ItemButton(@NotNull Material material) {
+    protected ItemButton(Material material) {
         this(new ItemStackBuilder(material));
     }
 
-    public @NotNull ItemButton name(@NotNull TextComponent component) {
+    public ItemButton name(TextComponent component) {
         itemStackBuilder.customName(
             component.decoration(TextDecoration.ITALIC).equals(TextDecoration.State.NOT_SET)
                 ? component.decoration(TextDecoration.ITALIC, false)
@@ -44,12 +45,12 @@ public class ItemButton {
         return this;
     }
 
-    public @NotNull ItemButton lore(@NotNull TextComponent component) {
+    public ItemButton loreLine(TextComponent component) {
         itemStackBuilder.lore(component);
         return this;
     }
 
-    public @NotNull ItemButton amount(int amount) {
+    public ItemButton amount(int amount) {
         if (amount < 1 || amount > 99) {
             throw new IllegalArgumentException("個数としては範囲外の値です");
         }
@@ -63,17 +64,17 @@ public class ItemButton {
         return this;
     }
 
-    public @NotNull ItemButton glint(boolean flag) {
+    public ItemButton glint(boolean flag) {
         itemStackBuilder.glint(flag);
         return this;
     }
 
-    public @NotNull ItemButton itemModel(@NotNull NamespacedKey id) {
+    public ItemButton itemModel(NamespacedKey id) {
         itemStackBuilder.itemModel(id);
         return this;
     }
 
-    public @NotNull ItemButton damage(float rate) throws IllegalStateException {
+    public ItemButton damage(float rate) throws IllegalStateException {
         if (itemStackBuilder.build().getMaxStackSize() != 1) {
             throw new IllegalStateException("耐久力の表示はアイテムの個数が1のときのみ利用できます");
         }
@@ -83,92 +84,92 @@ public class ItemButton {
         return this;
     }
 
-    public @NotNull ItemButton hideTooltip() {
+    public ItemButton hideTooltip() {
         itemStackBuilder.hideTooltip(true);
         return this;
     }
 
-    public @NotNull ItemButton clickSound(@NotNull Sound sound, float volume, float pitch) {
+    public ItemButton clickSound(Sound sound, float volume, float pitch) {
         this.sound = new ItemButtonClickSound(sound, volume, pitch);
         return this;
     }
 
-    public @NotNull ItemButton clickSound(@NotNull ItemButtonClickSound sound) {
+    public ItemButton clickSound(ItemButtonClickSound sound) {
         this.sound = sound;
         return this;
     }
 
-    public @NotNull ItemButton onClick(Consumer<ItemButtonClickEvent> listener) {
-        itemButtonClickEventDispatcher.add(listener);
+    public ItemButton onClick(Consumer<ItemButtonClickEvent> listener) {
+        events.register(ContainerInteractionEvent.ITEM_BUTTON_CLICK, listener);
         return this;
     }
 
-    public @NotNull ItemButton copy() {
+    public ItemButton copy() {
         return copy(this, ItemButton::new);
     }
 
-    protected @NotNull ItemStack build() {
+    protected ItemStack build() {
         return itemStackBuilder
             .customData(PATH, (byte) 1)
             .build();
     }
 
-    public @NotNull ItemStack visualItemStack() {
+    public ItemStack visualItemStack() {
         return itemStackBuilder.build();
     }
 
-    protected void click(@NotNull ItemButtonClickEvent event) {
-        itemButtonClickEventDispatcher.dispatch(event);
+    protected void click(ItemButtonClickEvent event) {
+        events.getDispatcher(ContainerInteractionEvent.ITEM_BUTTON_CLICK).dispatch(event);
         if (sound != null) {
             sound.play(event.getPlayer());
         }
     }
 
-    private static final MojangsonPath PATH = MojangsonPath.of("tpl_core.container_interaction_button");
+    private static final MojangsonPath PATH = MojangsonPath.of("generic_plugin_core.container_interaction.is_button");
 
-    protected static <T extends ItemButton> @NotNull T copy(@NotNull T itemButton, @NotNull Function<ItemStackBuilder, T> constructor) {
+    protected static <T extends ItemButton> T copy(T itemButton, Function<ItemStackBuilder, T> constructor) {
         final T copy = constructor.apply(itemButton.itemStackBuilder);
         copy.sound = itemButton.sound;
-        copy.onClick(((ItemButton) itemButton).itemButtonClickEventDispatcher::dispatch);
+        copy.onClick(((ItemButton) itemButton).events.getDispatcher(ContainerInteractionEvent.ITEM_BUTTON_CLICK)::dispatch);
         return copy;
     }
 
-    protected static boolean isButton(@NotNull ItemStack itemStack) {
+    protected static boolean isButton(ItemStack itemStack) {
         final MojangsonCompound compound = ItemStackCustomDataAccess.of(itemStack).read();
         if (!compound.has(PATH)) return false;
         else if (!compound.getTypeOf(PATH).equals(MojangsonValueTypes.BYTE)) return false;
         return compound.get(PATH, MojangsonValueTypes.BYTE).getAsBooleanValueOrNull() == Boolean.TRUE;
     }
 
-    public static @NotNull PotionButton potion() {
+    public static PotionButton potion() {
         return new PotionButton(Material.POTION);
     }
 
-    public static @NotNull PotionButton splashPotion() {
+    public static PotionButton splashPotion() {
         return new PotionButton(Material.SPLASH_POTION);
     }
 
-    public static @NotNull PotionButton lingeringPotion() {
+    public static PotionButton lingeringPotion() {
         return new PotionButton(Material.LINGERING_POTION);
     }
 
-    public static @NotNull PotionButton tippedArrow() {
+    public static PotionButton tippedArrow() {
         return new PotionButton(Material.TIPPED_ARROW);
     }
 
-    public static @NotNull PlayerHeadButton playerHead() {
+    public static PlayerHeadButton playerHead() {
         return new PlayerHeadButton();
     }
 
-    public static @NotNull LeatherArmorButton leatherArmor(@NotNull Material material) {
+    public static LeatherArmorButton leatherArmor(Material material) {
         return new LeatherArmorButton(material);
     }
 
-    public static @NotNull ArmorButton armor(@NotNull Material material) {
+    public static ArmorButton armor(Material material) {
         return new ArmorButton(material);
     }
 
-    public static @NotNull ItemButton item(@NotNull Material material) {
+    public static ItemButton item(Material material) {
         return new ItemButton(material);
     }
 }

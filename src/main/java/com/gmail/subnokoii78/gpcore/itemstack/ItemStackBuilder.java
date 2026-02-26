@@ -311,7 +311,34 @@ public class ItemStackBuilder {
     public @NotNull ItemStackBuilder customModelDataFlags(@NotNull Boolean... flags) {
         return editMeta(meta -> {
             final CustomModelDataComponent component = meta.getCustomModelDataComponent();
-            component.setFlags(Arrays.stream(flags).toList());
+            component.setFlags(Arrays.asList(flags));
+            meta.setCustomModelDataComponent(component);
+        });
+    }
+
+    @ApiStatus.Experimental
+    public @NotNull ItemStackBuilder customModelDataColors(@NotNull Color... colors) {
+        return editMeta(meta -> {
+            final CustomModelDataComponent component = meta.getCustomModelDataComponent();
+            component.setColors(Arrays.asList(colors));
+            meta.setCustomModelDataComponent(component);
+        });
+    }
+
+    @ApiStatus.Experimental
+    public @NotNull ItemStackBuilder customModelDataFloats(@NotNull Float... floats) {
+        return editMeta(meta -> {
+            final CustomModelDataComponent component = meta.getCustomModelDataComponent();
+            component.setFloats(Arrays.stream(floats).toList());
+            meta.setCustomModelDataComponent(component);
+        });
+    }
+
+    @ApiStatus.Experimental
+    public @NotNull ItemStackBuilder customModelDataFlags(@NotNull String... strings) {
+        return editMeta(meta -> {
+            final CustomModelDataComponent component = meta.getCustomModelDataComponent();
+            component.setStrings(Arrays.stream(strings).toList());
             meta.setCustomModelDataComponent(component);
         });
     }

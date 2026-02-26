@@ -1,6 +1,6 @@
 package com.gmail.subnokoii78.gpcore.ui.container;
 
-import com.gmail.subnokoii78.gpcore.events.EventDispatcher;
+import com.gmail.subnokoii78.gpcore.events.Events;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -12,26 +12,27 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@NullMarked
 public class ContainerInteraction {
     private static final class InteractionInventoryHolder implements InventoryHolder {
-        private final ContainerInteraction interactionBuilder;
+        private final ContainerInteraction interaction;
 
         private final Inventory inventory;
 
-        private InteractionInventoryHolder(@NotNull ContainerInteraction builder) {
-            interactionBuilder = builder;
-            inventory = Bukkit.createInventory(this, builder.maxColumn * 9, builder.name);
+        private InteractionInventoryHolder(ContainerInteraction interaction) {
+            this.interaction = interaction;
+            inventory = Bukkit.createInventory(this, interaction.maxColumn * 9, interaction.name);
         }
 
         @Override
-        public @NotNull Inventory getInventory() {
+        public Inventory getInventory() {
             return inventory;
         }
     }
@@ -42,14 +43,14 @@ public class ContainerInteraction {
 
     private final Map<Integer, ItemButton> buttons = new HashMap<>();
 
-    private final EventDispatcher<InteractionCloseEvent> closeEventDispatcher = new EventDispatcher<>(ContainerInteractionEvent.INTERACTION_CLOSE);
+    private final Events events = new Events();
 
-    public ContainerInteraction(@NotNull TextComponent name, int maxColumn) {
+    public ContainerInteraction(TextComponent name, int maxColumn) {
         this.name = name;
         this.maxColumn = maxColumn;
     }
 
-    public @NotNull TextComponent getName() {
+    public TextComponent getName() {
         return name;
     }
 
@@ -72,7 +73,15 @@ public class ContainerInteraction {
         return false;
     }
 
-    public @NotNull ContainerInteraction set(int slot, @Nullable ItemButton button) throws IllegalArgumentException {
+    public int getEmptySlotCount() {
+        int count = 0;
+        for (int i = 0; i < getSize(); i++) {
+            if (!buttons.containsKey(i)) count++;
+        }
+        return count;
+    }
+
+    public ContainerInteraction set(int slot, @Nullable ItemButton button) throws IllegalArgumentException {
         if (getSize() <= slot) {
             throw new IllegalArgumentException("範囲外のスロットが渡されました");
         }
@@ -82,46 +91,66 @@ public class ContainerInteraction {
         return this;
     }
 
-    public @NotNull ContainerInteraction add(@NotNull ItemButton button) throws IllegalStateException {
+    public ContainerInteraction add(ItemButton button) throws IllegalStateException {
         buttons.put(getFirstEmptySlot(), button);
         return this;
     }
 
-    public @NotNull ContainerInteraction fillRow(int index, @NotNull ItemButton button) {
+    public boolean has(int slot) {
+        return buttons.containsKey(slot);
+    }
+
+    public ItemButton get(int slot) throws IllegalStateException {
+        if (buttons.containsKey(slot)) {
+            return buttons.get(slot);
+        }
+        else {
+            throw new IllegalStateException("スロット " + slot + " にボタンがありません");
+        }
+    }
+
+    public ContainerInteraction remove(int slot) {
+        buttons.remove(slot);
+        return this;
+    }
+
+    public ContainerInteraction fillRow(int index, ItemButton button) {
         for (int i = index * 9; i < index * 9 + 9; i++) {
             set(i, button);
         }
         return this;
     }
 
-    public @NotNull ContainerInteraction fillColumn(int index, @NotNull ItemButton button) {
+    public ContainerInteraction fillColumn(int index, ItemButton button) {
         for (int i = 0; i < maxColumn; i++) {
             set(i * 9 + index, button);
         }
         return this;
     }
 
-    /*public @NotNull ContainerInteraction fillRandomly(@NotNull RandomService randomService) {
-        return this;
-    }*/
-
-    public @NotNull ContainerInteraction clear() {
+    public ContainerInteraction clear() {
         buttons.clear();
         return this;
     }
 
-    public @NotNull ContainerInteraction onClose(@NotNull Consumer<InteractionCloseEvent> listener) {
-        closeEventDispatcher.add(listener);
+    public ContainerInteraction onClick(Consumer<ItemButtonClickEvent> listener) {
+        events.register(ContainerInteractionEvent.ITEM_BUTTON_CLICK, listener);
         return this;
     }
 
-    public @NotNull ContainerInteraction copy() {
-        final ContainerInteraction copy = new ContainerInteraction(name, maxColumn).onClose(closeEventDispatcher::dispatch);
+    public ContainerInteraction onClose(Consumer<InteractionCloseEvent> listener) {
+        events.register(ContainerInteractionEvent.INTERACTION_CLOSE, listener);
+        return this;
+    }
+
+    public ContainerInteraction copy() {
+        final ContainerInteraction copy = new ContainerInteraction(name, maxColumn);
+        copy.onClose(events.getDispatcher(ContainerInteractionEvent.INTERACTION_CLOSE)::dispatch);
         buttons.forEach(copy::set);
         return copy;
     }
 
-    public void open(@NotNull Player player) {
+    public void open(Player player) {
         final InteractionInventoryHolder inventoryHolder = new InteractionInventoryHolder(this);
 
         for (int i = 0; i < getSize(); i++) {
@@ -151,10 +180,12 @@ public class ContainerInteraction {
 
             if (!(inventory.getHolder(false) instanceof InteractionInventoryHolder holder)) return;
 
-            final ItemButton button = holder.interactionBuilder.buttons.get(slot);
+            final ItemButton button = holder.interaction.buttons.get(slot);
             if (button == null) return;
 
-            button.click(new ItemButtonClickEvent(player, holder.interactionBuilder, slot, button));
+            final ItemButtonClickEvent e = new ItemButtonClickEvent(player, holder.interaction, slot, button);
+            holder.interaction.events.getDispatcher(ContainerInteractionEvent.ITEM_BUTTON_CLICK).dispatch(e);
+            button.click(e);
             event.setCancelled(true);
         }
 
@@ -170,7 +201,7 @@ public class ContainerInteraction {
             if (!(event.getPlayer() instanceof Player player)) return;
 
             if (event.getInventory().getHolder(false) instanceof InteractionInventoryHolder holder) {
-                holder.interactionBuilder.closeEventDispatcher.dispatch(new InteractionCloseEvent(holder.interactionBuilder, player));
+                holder.interaction.events.getDispatcher(ContainerInteractionEvent.INTERACTION_CLOSE).dispatch(new InteractionCloseEvent(holder.interaction, player));
             }
         }
 
