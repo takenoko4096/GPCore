@@ -10,4 +10,8 @@ public interface CommandArgumentableEnumeration {
     default Component getDescription() {
         return null;
     }
+
+    default String getValue() {
+        return toString();
+    }
 }

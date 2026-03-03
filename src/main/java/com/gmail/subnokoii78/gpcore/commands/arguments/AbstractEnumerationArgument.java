@@ -49,7 +49,7 @@ public abstract class AbstractEnumerationArgument<T extends Enum<T> & CommandArg
         }
 
         for (final T value : values) {
-            final String name = value.toString().toLowerCase(Locale.ROOT);
+            final String name = value.getValue().toLowerCase(Locale.ROOT);
 
             // Only suggest if argument value matches the user input
             if (name.startsWith(builder.getRemainingLowerCase())) {
