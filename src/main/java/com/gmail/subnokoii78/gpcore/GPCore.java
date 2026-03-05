@@ -74,7 +74,7 @@ public final class GPCore {
                 plugin.getComponentLogger().info(Component.text("データフォルダが既に存在するため、作成をスキップしました"));
             }
             else {
-                if (!plugin.getDataFolder().mkdir()) throw new IllegalStateException("データフォルダの作成に失敗しました; 致命的な例外のためプラグインは停止されます");
+                if (!plugin.getDataFolder().mkdirs()) throw new IllegalStateException("データフォルダの作成に失敗しました; 致命的な例外のためプラグインは停止されます");
             }
 
             GPCore.plugin = plugin;
