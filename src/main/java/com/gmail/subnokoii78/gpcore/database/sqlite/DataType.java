@@ -2,6 +2,8 @@ package com.gmail.subnokoii78.gpcore.database.sqlite;
 
 import org.jspecify.annotations.NullMarked;
 
+import java.util.Objects;
+
 @NullMarked
 public class DataType<T> {
     private final String name;
@@ -19,5 +21,16 @@ public class DataType<T> {
 
     public Class<T> getClazz() {
         return clazz;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, clazz.hashCode());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof DataType<?> dataType)) return false;
+        return Objects.equals(name, dataType.name) && Objects.equals(clazz, dataType.clazz);
     }
 }
