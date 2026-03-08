@@ -10,9 +10,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import java.util.Set;
 
 public abstract class AbstractGPLoader implements PluginLoader {
-    public Set<String> getMavenDependencies() {
-        return Set.of(/*"net.dmulloy2:ProtocolLib:5.4.0"*/);
-    }
+    public abstract Set<String> getMavenDependencies();
 
     @Override
     public final void classloader(PluginClasspathBuilder classpathBuilder) {
