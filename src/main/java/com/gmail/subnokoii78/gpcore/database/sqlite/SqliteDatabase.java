@@ -7,12 +7,14 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * PaperMCにはSqliteが標準で組み込まれているのでshadowやloaderを使う必要はない
  */
 @NullMarked
-public class SqliteDatabase {
+public abstract class SqliteDatabase {
     private final String url;
 
     @Nullable
@@ -40,6 +42,10 @@ public class SqliteDatabase {
         catch (SQLException e) {
             throw new SqliteDatabaseException("データベースへの接続に失敗しました: ", e);
         }
+    }
+
+    protected DatabaseTable table(String name, DatabaseTable.Entry<?>... entries) {
+        return new DatabaseTable(this, name, Arrays.stream(entries).collect(Collectors.toSet()));
     }
 
     protected void disconnect() {
