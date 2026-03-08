@@ -7,14 +7,14 @@ import java.util.*;
 import java.util.function.Function;
 
 @NullMarked
-public final class DatabaseTable {
+public final class SqliteTable {
     private final SqliteDatabase database;
 
     private final String name;
 
     private final List<TableDefinitionEntry<?>> entries;
 
-    DatabaseTable(SqliteDatabase database, String name, List<TableDefinitionEntry<?>> entries) {
+    SqliteTable(SqliteDatabase database, String name, List<TableDefinitionEntry<?>> entries) {
         this.database = database;
         this.name = name;
         this.entries = entries;
@@ -27,7 +27,7 @@ public final class DatabaseTable {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof DatabaseTable that)) return false;
+        if (!(o instanceof SqliteTable that)) return false;
         return Objects.equals(database, that.database) && Objects.equals(name, that.name) && Objects.equals(entries, that.entries);
     }
 
@@ -57,22 +57,6 @@ public final class DatabaseTable {
         }
         catch (SQLException e) {
             throw new SqliteDatabaseException("テーブルの作成に失敗しました: ", e);
-        }
-    }
-
-    public boolean clear() {
-        final String sql = String.format(
-            """
-            DELETE FROM %s
-            """,
-            getIdentifier()
-        );
-
-        try (final Statement statement = database.getConnection().createStatement()) {
-            return statement.execute(sql);
-        }
-        catch (SQLException e) {
-            throw new SqliteDatabaseException("データベースのアクセスに問題が発生しました", e);
         }
     }
 
@@ -198,7 +182,39 @@ public final class DatabaseTable {
         });
     }
 
-    public PrimaryKey primaryKey(Map<String, ?> values) {
+    public boolean clear() {
+        final String sql = String.format(
+            """
+            DELETE FROM %s
+            """,
+            getIdentifier()
+        );
+
+        try (final Statement statement = database.getConnection().createStatement()) {
+            return statement.execute(sql);
+        }
+        catch (SQLException e) {
+            throw new SqliteDatabaseException("データベースのアクセスに問題が発生しました", e);
+        }
+    }
+
+    public boolean delete() {
+        final String sql = String.format(
+            """
+            DROP TABLE %s;
+            """,
+            getIdentifier()
+        );
+
+        try (final Statement statement = database.getConnection().createStatement()) {
+            return statement.execute(sql);
+        }
+        catch (SQLException e) {
+            throw new SqliteDatabaseException("データベースのアクセスに問題が発生しました", e);
+        }
+    }
+
+    public PrimaryKey createPrimaryKey(Map<String, ?> values) {
         return new PrimaryKey(this, values);
     }
 
@@ -271,17 +287,17 @@ public final class DatabaseTable {
             return this;
         }
 
-        DatabaseTable toTable() {
-            return new DatabaseTable(database, name, entries);
+        SqliteTable toTable() {
+            return new SqliteTable(database, name, entries);
         }
     }
 
     public static class PrimaryKey {
-        private final DatabaseTable table;
+        private final SqliteTable table;
 
         private final Map<String, ?> map;
 
-        private PrimaryKey(DatabaseTable table, Map<String, ?> map) {
+        private PrimaryKey(SqliteTable table, Map<String, ?> map) {
             this.table = table;
             this.map = map;
 
@@ -298,6 +314,10 @@ public final class DatabaseTable {
                     throw new SqliteDatabaseException("'" + entry.getKey() + "' に一致するカラムが存在しないか、主キーではありません");
                 }
             }
+        }
+
+        public Map<String, ?> getValues() {
+            return map;
         }
 
         @Override
@@ -324,12 +344,23 @@ public final class DatabaseTable {
 
             try (final PreparedStatement preparedStatement = table.database.getConnection().prepareStatement(sql)) {
                 for (int i = 0; i < list.size(); i++) {
-                    final Object value = list.get(i).getValue();
+                    final Map.Entry<String, ?> entry = list.get(i);
+                    final Object value = entry.getValue();
+
+                    final DataType<?> type = table.entries.stream()
+                        .filter(e -> e.name.equals(entry.getKey()))
+                        .findFirst().orElseThrow(() -> new SqliteDatabaseException("NEVER HAPPENS")).type;
 
                     switch (value) {
                         case Integer integerValue -> preparedStatement.setInt(i, integerValue);
                         case Double doubleValue -> preparedStatement.setDouble(i, doubleValue);
                         case String stringValue -> preparedStatement.setString(i, stringValue);
+                        case byte[] bytesValue -> {
+                            final Blob blob = table.database.getConnection().createBlob();
+                            blob.setBytes(1, bytesValue);
+                            preparedStatement.setBlob(i, blob);
+                        }
+                        case null -> preparedStatement.setNull(i, type.toSqlType());
                         default -> throw new SqliteDatabaseException("not implemented: " + value.getClass().getName());
                     }
                 }

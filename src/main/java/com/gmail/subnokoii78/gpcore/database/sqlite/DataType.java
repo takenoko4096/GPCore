@@ -10,8 +10,11 @@ public class DataType<T> {
 
     private final Class<T> clazz;
 
-    protected DataType(String name, Class<T> clazz, boolean notNull) {
+    private final int sqlType;
+
+    DataType(String name, Class<T> clazz, int sqlType, boolean notNull) {
         this.name = name + (notNull ? (' ' + "NOT NULL") : (""));
+        this.sqlType = sqlType;
         this.clazz = clazz;
     }
 
@@ -21,6 +24,10 @@ public class DataType<T> {
 
     public Class<T> getClazz() {
         return clazz;
+    }
+
+    public int toSqlType() {
+        return sqlType;
     }
 
     @Override

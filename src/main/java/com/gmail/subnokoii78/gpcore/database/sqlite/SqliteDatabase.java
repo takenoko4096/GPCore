@@ -8,7 +8,9 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * PaperMCにはSqliteが標準で組み込まれているのでshadowやloaderを使う必要はない
@@ -40,12 +42,17 @@ public abstract class SqliteDatabase {
 
     protected final void create() {
         path.getParent().toFile().mkdirs();
+
         try {
             path.toFile().createNewFile();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected final void delete() {
+        path.toFile().delete();
     }
 
     protected final void connect() {
@@ -61,8 +68,11 @@ public abstract class SqliteDatabase {
         }
     }
 
-    protected final DatabaseTable.Builder tableBuilder(String name) {
-        return new DatabaseTable.Builder(this, name);
+    protected final SqliteTable table(String name, Consumer<SqliteTable.Builder> callback) {
+        final SqliteTable.Builder builder = new SqliteTable.Builder(this, name);
+        callback.accept(builder);
+
+        return builder.toTable();
     }
 
     protected final void disconnect() {

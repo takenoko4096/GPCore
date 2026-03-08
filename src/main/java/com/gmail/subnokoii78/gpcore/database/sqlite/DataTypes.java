@@ -2,19 +2,35 @@ package com.gmail.subnokoii78.gpcore.database.sqlite;
 
 import org.jspecify.annotations.NullMarked;
 
+import java.sql.Types;
+
 @NullMarked
-public class DataTypes {
-    private DataTypes() {}
+public class DataTypes<T> {
+    private final String identifier;
 
-    public static final DataType<Integer> INTEGER_NULLABLE = new DataType<>("INTEGER", Integer.class, false);
+    private final int sqlType;
 
-    public static final DataType<String> STRING_NULLABLE = new DataType<>("TEXT", String.class, false);
+    private final Class<T> clazz;
 
-    public static final DataType<Double> DOUBLE_NULLABLE = new DataType<>("REAL", Double.class, false);
+    private DataTypes(String identifier, Class<T> clazz, int sqlType) {
+        this.identifier = identifier;
+        this.sqlType = sqlType;
+        this.clazz = clazz;
+    }
 
-    public static final DataType<Integer> INTEGER_NOTNULL = new DataType<>("INTEGER", Integer.class, true);
+    public DataType<T> nullable() {
+        return new DataType<>(identifier, clazz, sqlType, false);
+    }
 
-    public static final DataType<String> STRING_NOTNULL = new DataType<>("TEXT", String.class, true);
+    public DataType<T> notNull() {
+        return new DataType<>(identifier, clazz, sqlType, true);
+    }
 
-    public static final DataType<Double> DOUBLE_NOTNULL = new DataType<>("REAL", Double.class, true);
+    public static final DataTypes<Integer> INTEGER = new DataTypes<>("INTEGER", Integer.class, Types.INTEGER);
+
+    public static final DataTypes<Double> DOUBLE = new DataTypes<>("REAL", Double.class, Types.REAL);
+
+    public static final DataTypes<String> STRING = new DataTypes<>("TEXT", String.class, Types.VARCHAR);
+
+    public static final DataTypes<?> BYTE_ARRAY = new DataTypes<>("BLOB", byte[].class, Types.BLOB);
 }
