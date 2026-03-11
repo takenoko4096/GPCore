@@ -8,8 +8,6 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -68,8 +66,8 @@ public abstract class SqliteDatabase {
         }
     }
 
-    protected final SqliteTable table(String name, Consumer<SqliteTable.Builder> callback) {
-        final SqliteTable.Builder builder = new SqliteTable.Builder(this, name);
+    protected final DataTable table(String name, Consumer<DataTable.Builder> callback) {
+        final DataTable.Builder builder = new DataTable.Builder(this, name);
         callback.accept(builder);
 
         return builder.toTable();
