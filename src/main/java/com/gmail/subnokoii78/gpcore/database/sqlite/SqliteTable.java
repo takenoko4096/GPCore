@@ -31,10 +31,6 @@ public final class SqliteTable {
         return Objects.equals(database, that.database) && Objects.equals(name, that.name) && Objects.equals(entries, that.entries);
     }
 
-    private String getIdentifier() {
-        return name + '_' + Integer.toUnsignedString(hashCode());
-    }
-
     public String getName() {
         return name;
     }
@@ -47,7 +43,7 @@ public final class SqliteTable {
                 PRIMARY KEY (%s)
             );
             """,
-            getIdentifier(),
+            name,
             String.join(", ", entries.stream().map(TableDefinitionEntry::toTypedName).toList()),
             String.join(", ", entries.stream().filter(TableDefinitionEntry::isKey).map(TableDefinitionEntry::getName).toList())
         );
@@ -66,7 +62,7 @@ public final class SqliteTable {
             SELECT 1 FROM %s
             WHERE $key_values
             """,
-            getIdentifier()
+            name
         );
 
         return key.use(sql, preparedStatement -> {
@@ -85,7 +81,7 @@ public final class SqliteTable {
             SELECT * FROM %s
             WHERE $key_values
             """,
-            getIdentifier()
+            name
         );
 
         final Map<String, Object> map = new HashMap<>();
@@ -114,7 +110,7 @@ public final class SqliteTable {
             """
             SELECT * FROM %s
             """,
-            getIdentifier()
+            name
         );
 
         final Set<DataRecord> entries = new HashSet<>();
@@ -127,10 +123,11 @@ public final class SqliteTable {
                 final Map<String, Object> keyMap = new HashMap<>();
 
                 for (final TableDefinitionEntry<?> entry : this.entries) {
-                    map.put(entry.name, resultSet.getObject(entry.name));
-
                     if (entry.isKey) {
                         keyMap.put(entry.name, resultSet.getObject(entry.name));
+                    }
+                    else {
+                        map.put(entry.name, resultSet.getObject(entry.name));
                     }
                 }
 
@@ -150,9 +147,14 @@ public final class SqliteTable {
             """
             INSERT OR IGNORE INTO %s(%s) VALUES (%s)
             """,
-            getIdentifier(),
+            name,
             String.join(", ", dataRecord.merged().keySet()),
-            String.join(", ", dataRecord.merged().values().stream().map(Object::toString).toList())
+            String.join(", ", dataRecord.merged().values().stream().map(v -> {
+                if (v instanceof String s) {
+                    return "'" + s + "'";
+                }
+                else return v.toString();
+            }).toList())
         );
 
         try (final Statement statement = database.getConnection().createStatement()) {
@@ -169,7 +171,7 @@ public final class SqliteTable {
             DELETE FROM %s
             WHERE $key_values
             """,
-            getIdentifier()
+            name
         );
 
         return key.use(sql, preparedStatement -> {
@@ -187,7 +189,7 @@ public final class SqliteTable {
             """
             DELETE FROM %s
             """,
-            getIdentifier()
+            name
         );
 
         try (final Statement statement = database.getConnection().createStatement()) {
@@ -203,7 +205,7 @@ public final class SqliteTable {
             """
             DROP TABLE %s;
             """,
-            getIdentifier()
+            name
         );
 
         try (final Statement statement = database.getConnection().createStatement()) {
@@ -255,7 +257,7 @@ public final class SqliteTable {
         }
 
         private String toTypedName() {
-            return name + ' ' + type;
+            return name + ' ' + type.getName();
         }
     }
 
@@ -310,7 +312,7 @@ public final class SqliteTable {
             }
 
             for (final Map.Entry<String, ?> entry : map.entrySet()) {
-                if (table.entries.stream().anyMatch(e -> !(e.name.equals(entry.getKey()) && e.isKey))) {
+                if (table.entries.stream().noneMatch(e -> e.name.equals(entry.getKey()) && e.isKey)) {
                     throw new SqliteDatabaseException("'" + entry.getKey() + "' に一致するカラムが存在しないか、主キーではありません");
                 }
             }
@@ -384,21 +386,22 @@ public final class SqliteTable {
 
         public DataRecord(PrimaryKey primaryKey, Map<String, ?> values) {
             this.primaryKey = primaryKey;
-
-            for (final Map.Entry<String, ?> entry : values.entrySet()) {
-                if (primaryKey.map.containsKey(entry.getKey())) {
-                    throw new SqliteDatabaseException("values に主キーが含まれています");
+            for (final String k : primaryKey.map.keySet()) {
+                if (values.containsKey(k)) {
+                    throw new SqliteDatabaseException("values に主キー '" + k + "' が含まれています: values=" + values);
                 }
             }
 
             for (final TableDefinitionEntry<?> entry : primaryKey.table.entries) {
+                if (entry.isKey) continue;
+
                 if (!values.containsKey(entry.name)) {
                     throw new SqliteDatabaseException("values にカラム '" + entry.name + "' が不足しています");
                 }
             }
 
             for (final Map.Entry<String, ?> entry : values.entrySet()) {
-                if (primaryKey.table.entries.stream().anyMatch(e -> !e.name.equals(entry.getKey()))) {
+                if (primaryKey.table.entries.stream().noneMatch(e -> e.name.equals(entry.getKey()))) {
                     throw new SqliteDatabaseException("無効なカラムが含まれています: " + entry.getKey());
                 }
             }
