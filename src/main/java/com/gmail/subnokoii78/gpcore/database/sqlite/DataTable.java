@@ -13,7 +13,7 @@ public final class DataTable {
 
     private final List<Column<?>> columns;
 
-    private final Queue<DataRecord> batches = new PriorityQueue<>();
+    private final Queue<DataRecord> batches = new ArrayDeque<>();
 
     DataTable(SqliteDatabase database, String name, List<Column<?>> columns) {
         this.database = database;
@@ -165,12 +165,15 @@ public final class DataTable {
 
         final Map<String, ?> merged = dataRecord.merged();
 
+        System.out.println(sql);
+
         try (final PreparedStatement preparedStatement = database.getConnection().prepareStatement(sql)) {
             for (int i = 0; i < list.size(); i++) {
+                System.out.println(i);
                 final Column<?> column = list.get(i);
                 final Object value = merged.get(column.getName());
 
-                preparedStatement.setObject(i, value);
+                preparedStatement.setObject(i + 1, value);
             }
 
             return preparedStatement.execute();
@@ -254,7 +257,7 @@ public final class DataTable {
 
                 for (int j = 0; j < columnList.size(); j++) {
                     final Column<?> column = columnList.get(j);
-                    preparedStatement.setObject(j, merged.get(column.getName()));
+                    preparedStatement.setObject(j + 1, merged.get(column.getName()));
                 }
 
                 preparedStatement.addBatch();
