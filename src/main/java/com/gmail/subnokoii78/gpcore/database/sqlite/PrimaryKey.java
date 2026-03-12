@@ -1,5 +1,7 @@
 package com.gmail.subnokoii78.gpcore.database.sqlite;
 
+import org.jspecify.annotations.NullMarked;
+
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+@NullMarked
 public class PrimaryKey {
     private final DataTable table;
 
@@ -51,12 +54,12 @@ public class PrimaryKey {
         return Objects.hash(table, map);
     }
 
-    protected <U> U use(String template, Function<PreparedStatement, U> callback) {
+    protected <U> U query(String template, Function<PreparedStatement, U> callback) {
         final List<? extends Map.Entry<String, ?>> list = map.entrySet().stream().toList();
 
         final String sql = template.replace(
-            "$key_values",
-            String.join(
+            "$where",
+            "WHERE" + ' ' + String.join(
                 " AND ",
                 list.stream().map(entry -> String.format("%s=?", entry.getKey())).toList()
             )

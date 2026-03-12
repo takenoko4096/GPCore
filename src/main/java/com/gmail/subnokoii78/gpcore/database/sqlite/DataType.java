@@ -5,7 +5,7 @@ import org.jspecify.annotations.NullMarked;
 import java.util.Objects;
 
 @NullMarked
-public class DataType<T> {
+public final class DataType<T> {
     private final String name;
 
     private final Class<T> clazz;

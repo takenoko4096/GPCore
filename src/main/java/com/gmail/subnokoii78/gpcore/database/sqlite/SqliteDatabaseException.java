@@ -1,5 +1,8 @@
 package com.gmail.subnokoii78.gpcore.database.sqlite;
 
+import org.jspecify.annotations.NullMarked;
+
+@NullMarked
 public class SqliteDatabaseException extends RuntimeException {
     protected SqliteDatabaseException(String message, Throwable cause) {
         super(message, cause);

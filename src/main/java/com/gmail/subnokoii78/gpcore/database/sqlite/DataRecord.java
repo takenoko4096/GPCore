@@ -1,9 +1,12 @@
 package com.gmail.subnokoii78.gpcore.database.sqlite;
 
+import org.jspecify.annotations.NullMarked;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+@NullMarked
 public class DataRecord {
     private final PrimaryKey primaryKey;
 

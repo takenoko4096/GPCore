@@ -13,6 +13,8 @@ public final class DataTable {
 
     private final List<Column<?>> columns;
 
+    private final Queue<DataRecord> batches = new PriorityQueue<>();
+
     DataTable(SqliteDatabase database, String name, List<Column<?>> columns) {
         this.database = database;
         this.name = name;
@@ -67,12 +69,12 @@ public final class DataTable {
         final String sql = String.format(
             """
             SELECT 1 FROM %s
-            WHERE $key_values
+            $where
             """,
             name
         );
 
-        return key.use(sql, preparedStatement -> {
+        return key.query(sql, preparedStatement -> {
             try (final ResultSet resultSet = preparedStatement.executeQuery()) {
                 return resultSet.next();
             }
@@ -86,14 +88,14 @@ public final class DataTable {
         final String sql = String.format(
             """
             SELECT * FROM %s
-            WHERE $key_values
+            $where
             """,
             name
         );
 
         final Map<String, Object> map = new HashMap<>();
 
-        key.use(sql, preparedStatement -> {
+        key.query(sql, preparedStatement -> {
             try (final ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
                     for (final Column<?> entry : columns) {
@@ -150,22 +152,117 @@ public final class DataTable {
     }
 
     public boolean insert(DataRecord dataRecord) {
+        final List<Column<?>> list = columns.stream().toList();
+
         final String sql = String.format(
             """
-            INSERT OR IGNORE INTO %s(%s) VALUES (%s)
+            INSERT OR REPLACE INTO %s(%s) VALUES (%s)
             """,
             name,
-            String.join(", ", dataRecord.merged().keySet()),
-            String.join(", ", dataRecord.merged().values().stream().map(v -> {
-                if (v instanceof String s) {
-                    return "'" + s + "'";
-                }
-                else return v.toString();
-            }).toList())
+            String.join(", ", list.stream().map(Column::getName).toList()),
+            String.join(", ", list.stream().map(c -> "?").toList())
         );
 
-        try (final Statement statement = database.getConnection().createStatement()) {
-            return statement.execute(sql);
+        final Map<String, ?> merged = dataRecord.merged();
+
+        try (final PreparedStatement preparedStatement = database.getConnection().prepareStatement(sql)) {
+            for (int i = 0; i < list.size(); i++) {
+                final Column<?> column = list.get(i);
+                final Object value = merged.get(column.getName());
+
+                preparedStatement.setObject(i, value);
+            }
+
+            return preparedStatement.execute();
+        }
+        catch (SQLException e) {
+            throw new SqliteDatabaseException("データベースのアクセスに問題が発生しました", e);
+        }
+    }
+
+    public void batch(DataRecord dataRecord) {
+        batches.add(dataRecord);
+    }
+
+    public int flushByBulkInsert(int limit) {
+        final List<Column<?>> columnList = columns.stream().toList();
+
+        final StringBuilder sql = new StringBuilder(String.format(
+            """
+            INSERT OR REPLACE INTO %s(%s) VALUES
+            """,
+            name,
+            String.join(", ", columnList.stream().map(Column::getName).toList())
+        ));
+
+        final int recordCount = Math.min(batches.size(), limit);
+        final String recordWithPlaceHolder = '(' + String.join(", ", columnList.stream().map(c -> "?").toList()) + ')';
+
+        for (int i = 0; i < recordCount; i++) {
+            if (i > 0) sql.append(", ");
+            sql.append(recordWithPlaceHolder);
+        }
+
+        try (final PreparedStatement preparedStatement = database.getConnection().prepareStatement(sql.toString())) {
+
+            int i = 1;
+            int j = 0;
+            while (j < recordCount) {
+                final DataRecord record = batches.poll();
+
+                if (record == null) break; // maybe never happens
+
+                final Map<String, ?> merged = record.merged();
+
+                for (final Column<?> column : columnList) {
+                    final Object value = merged.get(column.getName());
+                    preparedStatement.setObject(i++, value);
+                }
+
+                j++;
+            }
+
+            return preparedStatement.executeUpdate();
+        }
+        catch (SQLException e) {
+            throw new IllegalStateException("データベースのアクセスに問題が発生しました", e);
+        }
+    }
+
+    public int flushByTransaction(int limit) {
+        final List<Column<?>> columnList = columns.stream().toList();
+
+        final String sql = String.format(
+            """
+            INSERT OR REPLACE INTO %s(%s) VALUES (%s)
+            """,
+            name,
+            String.join(", ", columnList.stream().map(Column::getName).toList()),
+            String.join(", ", columnList.stream().map(c -> "?").toList())
+        );
+
+        final int recordCount = Math.min(batches.size(), limit);
+
+        try (final PreparedStatement preparedStatement = database.getConnection().prepareStatement(sql)) {
+            int i = 0;
+            while (i < recordCount) {
+                final DataRecord dataRecord = batches.poll();
+
+                if (dataRecord == null) break; // maybe never happens
+
+                final Map<String, ?> merged = dataRecord.merged();
+
+                for (int j = 0; j < columnList.size(); j++) {
+                    final Column<?> column = columnList.get(j);
+                    preparedStatement.setObject(j, merged.get(column.getName()));
+                }
+
+                preparedStatement.addBatch();
+
+                i++;
+            }
+
+            return preparedStatement.executeBatch().length;
         }
         catch (SQLException e) {
             throw new SqliteDatabaseException("データベースのアクセスに問題が発生しました", e);
@@ -176,12 +273,12 @@ public final class DataTable {
         final String sql = String.format(
             """
             DELETE FROM %s
-            WHERE $key_values
+            $where
             """,
             name
         );
 
-        return key.use(sql, preparedStatement -> {
+        return key.query(sql, preparedStatement -> {
             try {
                 return preparedStatement.execute();
             }
@@ -300,5 +397,4 @@ public final class DataTable {
             return new DataTable(database, name, entries);
         }
     }
-
 }

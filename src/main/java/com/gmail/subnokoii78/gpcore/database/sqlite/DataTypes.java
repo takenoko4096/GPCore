@@ -5,7 +5,7 @@ import org.jspecify.annotations.NullMarked;
 import java.sql.Types;
 
 @NullMarked
-public class DataTypes<T> {
+public final class DataTypes<T> {
     private final String identifier;
 
     private final int sqlType;

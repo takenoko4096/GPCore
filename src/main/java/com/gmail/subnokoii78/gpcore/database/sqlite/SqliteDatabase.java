@@ -73,7 +73,7 @@ public abstract class SqliteDatabase {
         return builder.toTable();
     }
 
-    protected final void disconnect() {
+    protected void disconnect() {
         if (connection == null) {
             throw new SqliteDatabaseException("切断に失敗しました: 既に接続されていません");
         }
@@ -89,5 +89,7 @@ public abstract class SqliteDatabase {
 
     public abstract void open();
 
-    public abstract void close();
+    public void close() {
+        disconnect();
+    }
 }
